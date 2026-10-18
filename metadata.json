@@ -1,0 +1,6 @@
+{
+  "name": "SIMCO SARLU - Homeluxe Real Estate",
+  "description": "Premium luxury real estate platform. Discover exceptional properties and unlock the door to your dream home.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

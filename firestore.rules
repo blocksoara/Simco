@@ -1,0 +1,56 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow get: if true;
+      allow list: if false;
+      allow create, update: if true;
+      allow delete: if isOwner(userId);
+
+      // User favorites subcollection
+      match /favorites/{propertyId} {
+        allow read, write: if true;
+      }
+    }
+
+    // Global properties collection
+    match /properties/{propertyId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if true;
+    }
+
+    // Valuation inquiries
+    match /valuation_requests/{requestId} {
+      allow create: if true;
+      allow read, update, delete: if true;
+    }
+
+    // Private tour booking inquiries
+    match /tour_requests/{tourId} {
+      allow create: if true;
+      allow read, update, delete: if true;
+    }
+
+    // Newsletter subscription collection
+    match /newsletter_subscribers/{subscriberId} {
+      allow create: if true;
+      allow read, update, delete: if true;
+    }
+
+    // Default catch-all denies unauthorized access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

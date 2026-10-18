@@ -1,0 +1,121 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile document",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Property": {
+      "title": "Property",
+      "description": "Real estate property listing",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "status": { "type": "string", "enum": ["FOR SALE", "FOR RENT"] },
+        "price": { "type": "string" },
+        "rawPrice": { "type": "number" },
+        "currency": { "type": "string" },
+        "currencySymbol": { "type": "string" },
+        "address": { "type": "string" },
+        "location": { "type": "string" },
+        "city": { "type": "string" },
+        "country": { "type": "string" },
+        "beds": { "type": "number" },
+        "baths": { "type": "number" },
+        "sqFt": { "type": "string" },
+        "image": { "type": "string" },
+        "images": { "type": "array" },
+        "video": { "type": "string" },
+        "type": { "type": "string" },
+        "description": { "type": "string" },
+        "authorUid": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "status", "price", "rawPrice", "address", "country", "type"]
+    },
+    "Favorite": {
+      "title": "Favorite",
+      "description": "User saved property favorite",
+      "type": "object",
+      "properties": {
+        "propertyId": { "type": "string" },
+        "addedAt": { "type": "string" }
+      },
+      "required": ["propertyId"]
+    },
+    "ValuationRequest": {
+      "title": "ValuationRequest",
+      "description": "User property valuation request",
+      "type": "object",
+      "properties": {
+        "address": { "type": "string" },
+        "propertyType": { "type": "string" },
+        "ownerName": { "type": "string" },
+        "ownerEmail": { "type": "string" },
+        "ownerPhone": { "type": "string" },
+        "estimatedValue": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["address", "ownerName", "ownerEmail"]
+    },
+    "TourRequest": {
+      "title": "TourRequest",
+      "description": "Private property tour request",
+      "type": "object",
+      "properties": {
+        "propertyId": { "type": "string" },
+        "propertyAddress": { "type": "string" },
+        "clientName": { "type": "string" },
+        "clientPhone": { "type": "string" },
+        "tourDate": { "type": "string" },
+        "tourType": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["propertyId", "clientName", "clientPhone"]
+    },
+    "NewsletterSubscriber": {
+      "title": "NewsletterSubscriber",
+      "description": "Newsletter email subscription",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "subscribedAt": { "type": "string" }
+      },
+      "required": ["email"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile collection"
+    },
+    "/users/{userId}/favorites/{propertyId}": {
+      "schema": "Favorite",
+      "description": "User saved favorite properties"
+    },
+    "/properties/{propertyId}": {
+      "schema": "Property",
+      "description": "Global property listings"
+    },
+    "/valuation_requests/{requestId}": {
+      "schema": "ValuationRequest",
+      "description": "Submitted valuation estimation requests"
+    },
+    "/tour_requests/{tourId}": {
+      "schema": "TourRequest",
+      "description": "Submitted private showing requests"
+    },
+    "/newsletter_subscribers/{subscriberId}": {
+      "schema": "NewsletterSubscriber",
+      "description": "Newsletter subscribers collection"
+    }
+  }
+}
