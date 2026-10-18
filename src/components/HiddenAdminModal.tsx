@@ -370,11 +370,25 @@ export const HiddenAdminModal: React.FC<HiddenAdminModalProps> = ({
 
   // Upload photo from device
   const handleUploadPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
     try {
-      const compressed = await compressImage(file, 1600, 0.85);
-      setGalleryImages((prev) => [...prev, compressed]);
+      const newImgs: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const isImage =
+          file.type.startsWith('image/') ||
+          /\.(jpe?g|png|webp|gif|bmp|heic|heif|avif)$/i.test(file.name);
+        if (isImage) {
+          const compressed = await compressImage(file, 1400, 1050, 0.8);
+          if (compressed && compressed.length > 50 && compressed !== 'data:,') {
+            newImgs.push(compressed);
+          }
+        }
+      }
+      if (newImgs.length > 0) {
+        setGalleryImages((prev) => [...prev, ...newImgs]);
+      }
     } catch (err) {
       console.warn('Image upload compression error:', err);
     }

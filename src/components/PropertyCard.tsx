@@ -54,9 +54,17 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
       {/* Property Image Container */}
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100">
         <img
-          src={property.image}
+          src={
+            property.image && property.image !== 'data:,' && property.image.length > 20
+              ? property.image
+              : 'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=1600&q=80'
+          }
           alt={`${property.address}, ${property.location}`}
           referrerPolicy="no-referrer"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src =
+              'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=1600&q=80';
+          }}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
 

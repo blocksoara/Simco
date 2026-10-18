@@ -4,43 +4,103 @@
 
 export function compressImage(
   file: File,
-  maxWidth = 1200,
-  maxHeight = 900,
-  quality = 0.75
+  maxWidth = 1400,
+  maxHeightOrQuality: number = 1050,
+  qualityOpt = 0.8
 ): Promise<string> {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
+    // Determine effective bounds and quality
+    let targetMaxWidth = maxWidth;
+    let targetMaxHeight = maxHeightOrQuality;
+    let targetQuality = qualityOpt;
+
+    // Handle when caller passed (file, 1600, 0.82) -> 3rd argument is quality
+    if (maxHeightOrQuality > 0 && maxHeightOrQuality <= 1) {
+      targetQuality = maxHeightOrQuality;
+      targetMaxHeight = targetMaxWidth;
+    }
+
+    if (!targetMaxWidth || targetMaxWidth <= 1) targetMaxWidth = 1400;
+    if (!targetMaxHeight || targetMaxHeight <= 1) targetMaxHeight = 1050;
+    if (!targetQuality || targetQuality <= 0 || targetQuality > 1) targetQuality = 0.8;
+
     const reader = new FileReader();
+
     reader.onload = (e) => {
+      const rawDataUrl = e.target?.result as string;
+      if (!rawDataUrl) {
+        resolve('');
+        return;
+      }
+
       const img = new Image();
+
       img.onload = () => {
-        let width = img.width;
-        let height = img.height;
-        if (width > maxWidth) {
-          height = Math.round((height * maxWidth) / width);
-          width = maxWidth;
+        try {
+          const origWidth = img.naturalWidth || img.width || 1200;
+          const origHeight = img.naturalHeight || img.height || 900;
+
+          let width = origWidth;
+          let height = origHeight;
+
+          // Scale down proportionally
+          if (width > targetMaxWidth) {
+            height = Math.round((height * targetMaxWidth) / width);
+            width = targetMaxWidth;
+          }
+          if (height > targetMaxHeight) {
+            width = Math.round((width * targetMaxHeight) / height);
+            height = targetMaxHeight;
+          }
+
+          // Safety guardrails against 0 or negative dimensions
+          width = Math.max(10, Math.round(width));
+          height = Math.max(10, Math.round(height));
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+
+          if (!ctx) {
+            resolve(rawDataUrl);
+            return;
+          }
+
+          // Draw image onto canvas
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Get optimized JPEG data URL
+          const result = canvas.toDataURL('image/jpeg', targetQuality);
+
+          // Sanity check: must be a valid data URL with actual payload
+          if (result && result.startsWith('data:image/') && result.length > 200) {
+            resolve(result);
+          } else {
+            resolve(rawDataUrl);
+          }
+        } catch (canvasErr) {
+          console.warn('Canvas processing error, falling back to raw data URL:', canvasErr);
+          resolve(rawDataUrl);
         }
-        if (height > maxHeight) {
-          width = Math.round((width * maxHeight) / height);
-          height = maxHeight;
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          resolve(e.target?.result as string);
-          return;
-        }
-        ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', quality));
       };
-      img.onerror = () => resolve(e.target?.result as string);
-      img.src = e.target?.result as string;
+
+      img.onerror = () => {
+        // Fallback to raw data URL
+        resolve(rawDataUrl);
+      };
+
+      img.src = rawDataUrl;
     };
-    reader.onerror = reject;
+
+    reader.onerror = () => {
+      resolve('');
+    };
+
     reader.readAsDataURL(file);
   });
 }
+
 
 export function formatVideoEmbedUrl(url: string): { type: 'youtube' | 'vimeo' | 'direct'; embedUrl: string } | null {
   if (!url || typeof url !== 'string') return null;

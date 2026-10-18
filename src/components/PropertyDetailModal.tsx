@@ -62,15 +62,20 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
 
   if (!property) return null;
 
-  // Compile all photos (primary image + any additional gallery images)
-  const allPhotos: string[] =
+  const defaultFallback =
+    'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=1600&q=80';
+  const rawList =
     property.images && property.images.length > 0
       ? property.images
       : property.image
       ? [property.image]
       : [];
+  const cleanList = rawList.filter(
+    (p) => p && typeof p === 'string' && p.trim().length > 30 && p !== 'data:,'
+  );
+  const allPhotos: string[] = cleanList.length > 0 ? cleanList : [defaultFallback];
+  const currentPhoto = allPhotos[selectedPhotoIndex] || allPhotos[0] || defaultFallback;
 
-  const currentPhoto = allPhotos[selectedPhotoIndex] || property.image;
   const parsedVideo = property.video ? formatVideoEmbedUrl(property.video) : null;
   const hasVideo = !!parsedVideo;
 
@@ -151,6 +156,9 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                 src={currentPhoto}
                 alt={property.address}
                 referrerPolicy="no-referrer"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = defaultFallback;
+                }}
                 className="w-full h-full object-cover transition-all duration-300"
               />
 
@@ -254,7 +262,14 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                     : 'border-transparent opacity-60 hover:opacity-100'
                 }`}
               >
-                <img src={thumb} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                <img
+                  src={thumb}
+                  alt={`Thumbnail ${idx + 1}`}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = defaultFallback;
+                  }}
+                  className="w-full h-full object-cover"
+                />
               </button>
             ))}
           </div>

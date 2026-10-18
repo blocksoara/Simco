@@ -87,6 +87,7 @@ export const ListPropertyModal: React.FC<ListPropertyModalProps> = ({
   const [photoUrlInput, setPhotoUrlInput] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [isDraggingPhoto, setIsDraggingPhoto] = useState(false);
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
 
   // SasPay Payment States
@@ -138,24 +139,30 @@ export const ListPropertyModal: React.FC<ListPropertyModalProps> = ({
   const currentCurrency = getCurrency(currency);
   const currentFee = getListingPublicationFee(propertyType, currency);
 
-  // Handle image upload from computer / mobile
-  const handlePhotoFilesSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  // Process selected or dropped photo files
+  const processPhotoFiles = async (fileList: FileList | File[]) => {
+    if (!fileList || fileList.length === 0) return;
 
     setIsUploadingPhoto(true);
     try {
       const newImages: string[] = [];
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        if (file.type.startsWith('image/')) {
-          const compressed = await compressImage(file, 1600, 0.82);
-          newImages.push(compressed);
+      for (let i = 0; i < fileList.length; i++) {
+        const file = fileList[i];
+        const isImage =
+          file.type.startsWith('image/') ||
+          /\.(jpe?g|png|webp|gif|bmp|heic|heif|avif)$/i.test(file.name);
+        if (isImage) {
+          const compressed = await compressImage(file, 1400, 1050, 0.8);
+          if (compressed && (compressed.startsWith('data:image/') || compressed.startsWith('http')) && compressed.length > 50) {
+            newImages.push(compressed);
+          }
         }
       }
-      setPhotos((prev) => [...prev, ...newImages]);
+      if (newImages.length > 0) {
+        setPhotos((prev) => [...prev, ...newImages]);
+      }
     } catch (err) {
-      console.warn('Image compression failed:', err);
+      console.warn('Image processing failed:', err);
     } finally {
       setIsUploadingPhoto(false);
       if (filePhotoInputRef.current) {
@@ -163,6 +170,21 @@ export const ListPropertyModal: React.FC<ListPropertyModalProps> = ({
       }
     }
   };
+
+  const handlePhotoFilesSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      await processPhotoFiles(e.target.files);
+    }
+  };
+
+  const handlePhotoDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDraggingPhoto(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      await processPhotoFiles(e.dataTransfer.files);
+    }
+  };
+
 
   // Add photo via direct URL
   const handleAddPhotoUrl = () => {
@@ -214,9 +236,13 @@ export const ListPropertyModal: React.FC<ListPropertyModalProps> = ({
         : 'Land / Plot'
       : propertyType;
 
+    const validPhotos = photos.filter(
+      (p) => p && typeof p === 'string' && p.trim().length > 30 && p !== 'data:,'
+    );
+
     const primaryImage =
-      photos.length > 0
-        ? photos[0]
+      validPhotos.length > 0
+        ? validPhotos[0]
         : isLand
         ? 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1600&q=80'
         : propertyType === 'Coastal Villa'
@@ -241,7 +267,7 @@ export const ListPropertyModal: React.FC<ListPropertyModalProps> = ({
       baths: isLand ? 0 : parseInt(baths, 10) || 2,
       sqFt: `${sqft} ${isLand ? (lang === 'fr' ? 'm² (Superficie)' : 'Sq Ft (Lot)') : 'Sq Ft'}`,
       image: primaryImage,
-      images: photos.length > 0 ? photos : [primaryImage],
+      images: validPhotos.length > 0 ? validPhotos : [primaryImage],
       video: videoUrl.trim() || '',
       type: savedType,
       description: isLand
@@ -1029,21 +1055,30 @@ export const ListPropertyModal: React.FC<ListPropertyModalProps> = ({
               </div>
 
               {/* Upload Photos */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-700">
-                    {t.uploadPhotosLabel} ({photos.length})
+                  <span className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                    <ImageIcon className="w-3.5 h-3.5 text-[#082653]" />
+                    <span>{t.uploadPhotosLabel}</span>
+                    {photos.length > 0 && (
+                      <span className="ml-1 px-1.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full">
+                        {photos.length}
+                      </span>
+                    )}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => filePhotoInputRef.current?.click()}
-                    disabled={isUploadingPhoto}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#082653] hover:bg-[#16477F] text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
-                  >
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>{isUploadingPhoto ? 'Traitement...' : t.uploadPhotosBtn}</span>
-                  </button>
+                  {photos.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => filePhotoInputRef.current?.click()}
+                      disabled={isUploadingPhoto}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>{t.uploadPhotosBtn}</span>
+                    </button>
+                  )}
                 </div>
+
                 <input
                   type="file"
                   ref={filePhotoInputRef}
@@ -1053,14 +1088,125 @@ export const ListPropertyModal: React.FC<ListPropertyModalProps> = ({
                   className="hidden"
                 />
 
+                {/* Dropzone Area when no photos or for quick add */}
+                {photos.length === 0 ? (
+                  <div
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDraggingPhoto(true);
+                    }}
+                    onDragLeave={() => setIsDraggingPhoto(false)}
+                    onDrop={handlePhotoDrop}
+                    onClick={() => filePhotoInputRef.current?.click()}
+                    className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all ${
+                      isDraggingPhoto
+                        ? 'border-[#082653] bg-blue-50/60 scale-[1.01]'
+                        : 'border-slate-300 hover:border-[#082653] bg-slate-50/70 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-slate-200/80 flex items-center justify-center text-[#082653]">
+                      <Upload className="w-5 h-5" />
+                    </div>
+                    <p className="text-xs font-semibold text-slate-800">
+                      {isUploadingPhoto
+                        ? (lang === 'fr' ? 'Optimisation et chargement des photos...' : 'Optimizing and uploading photos...')
+                        : (lang === 'fr' ? 'Cliquez pour sélectionner vos photos ou glissez-déposez ici' : 'Click to select photos or drag & drop here')}
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      {lang === 'fr'
+                        ? 'Photos de haute qualité (JPG, PNG, WebP) depuis votre PC ou smartphone'
+                        : 'High quality photos (JPG, PNG, WebP) from phone or desktop'}
+                    </p>
+                    <button
+                      type="button"
+                      disabled={isUploadingPhoto}
+                      className="mt-3 px-3 py-1.5 bg-[#082653] hover:bg-[#16477F] text-white text-xs font-semibold rounded-lg transition-colors inline-flex items-center gap-1.5 shadow-xs"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>{isUploadingPhoto ? 'Traitement...' : t.uploadPhotosBtn}</span>
+                    </button>
+                  </div>
+                ) : (
+                  /* Thumbnails list with "+ Ajouter" tile */
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5 pt-1">
+                    {photos.map((photo, idx) => (
+                      <div
+                        key={idx}
+                        className="relative aspect-video rounded-lg overflow-hidden border border-slate-200 group bg-slate-100 shadow-2xs"
+                      >
+                        <img
+                          src={photo}
+                          alt={`Property upload ${idx + 1}`}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            // Fallback to placeholder if broken
+                            (e.target as HTMLImageElement).src =
+                              'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80';
+                          }}
+                        />
+                        {idx === 0 && (
+                          <span className="absolute top-1 left-1 bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-xs z-10">
+                            {t.coverPhotoBadge}
+                          </span>
+                        )}
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          {idx !== 0 && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSetPrimaryCover(idx);
+                              }}
+                              title={t.setAsCover}
+                              className="w-7 h-7 rounded-full bg-white text-slate-800 flex items-center justify-center text-[10px] font-bold shadow hover:bg-slate-100 cursor-pointer transition-transform hover:scale-110"
+                            >
+                              <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemovePhoto(idx);
+                            }}
+                            title={t.removeMedia}
+                            className="w-7 h-7 rounded-full bg-red-600 text-white flex items-center justify-center shadow hover:bg-red-700 cursor-pointer transition-transform hover:scale-110"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Quick Add More Tile */}
+                    <button
+                      type="button"
+                      onClick={() => filePhotoInputRef.current?.click()}
+                      disabled={isUploadingPhoto}
+                      className="aspect-video rounded-lg border-2 border-dashed border-slate-300 hover:border-[#082653] bg-slate-50 hover:bg-slate-100 flex flex-col items-center justify-center text-slate-600 hover:text-[#082653] transition-all cursor-pointer p-2"
+                    >
+                      <Plus className="w-4 h-4 mb-0.5" />
+                      <span className="text-[10px] font-semibold text-center leading-tight">
+                        {lang === 'fr' ? '+ Ajouter' : '+ Add more'}
+                      </span>
+                    </button>
+                  </div>
+                )}
+
                 {/* Direct Photo URL Input */}
-                <div className="flex gap-2">
+                <div className="flex gap-2 pt-1">
                   <input
                     type="url"
                     placeholder={t.photoUrlPlaceholder}
                     value={photoUrlInput}
                     onChange={(e) => setPhotoUrlInput(e.target.value)}
-                    className="flex-1 p-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddPhotoUrl();
+                      }
+                    }}
+                    className="flex-1 p-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#082653]"
                   />
                   <button
                     type="button"
@@ -1071,46 +1217,8 @@ export const ListPropertyModal: React.FC<ListPropertyModalProps> = ({
                     <span>{t.addPhotoUrlBtn}</span>
                   </button>
                 </div>
-
-                {/* Thumbnails list */}
-                {photos.length > 0 && (
-                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 pt-2">
-                    {photos.map((photo, idx) => (
-                      <div
-                        key={idx}
-                        className="relative aspect-video rounded-lg overflow-hidden border border-slate-200 group bg-slate-100"
-                      >
-                        <img src={photo} alt={`Property upload ${idx + 1}`} className="w-full h-full object-cover" />
-                        {idx === 0 && (
-                          <span className="absolute top-1 left-1 bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-xs">
-                            {t.coverPhotoBadge}
-                          </span>
-                        )}
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                          {idx !== 0 && (
-                            <button
-                              type="button"
-                              onClick={() => handleSetPrimaryCover(idx)}
-                              title={t.setAsCover}
-                              className="w-6 h-6 rounded-full bg-white text-slate-800 flex items-center justify-center text-[10px] font-bold shadow hover:bg-slate-100 cursor-pointer"
-                            >
-                              <Star className="w-3 h-3" />
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => handleRemovePhoto(idx)}
-                            title={t.removeMedia}
-                            className="w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center shadow hover:bg-red-700 cursor-pointer"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
+
 
               {/* Video Walkthrough Section */}
               <div className="space-y-2 pt-2">

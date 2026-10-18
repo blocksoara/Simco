@@ -101,6 +101,16 @@ export default function App() {
             const firestoreProps: Property[] = [];
             snapshot.forEach((docSnap) => {
               const data = docSnap.data();
+              const defaultLuxuryPhoto =
+                'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=1600&q=80';
+              const rawImage = typeof data.image === 'string' ? data.image.trim() : '';
+              const isClean = rawImage && rawImage !== 'data:,' && rawImage.length > 30;
+              const safeImage = isClean ? rawImage : defaultLuxuryPhoto;
+              const rawImages = Array.isArray(data.images) ? data.images : rawImage ? [rawImage] : [];
+              const cleanImages = rawImages.filter(
+                (img: string) => img && typeof img === 'string' && img !== 'data:,' && img.trim().length > 30
+              );
+
               firestoreProps.push({
                 id: docSnap.id,
                 status: data.status,
@@ -118,8 +128,8 @@ export default function App() {
                 beds: data.beds,
                 baths: data.baths,
                 sqFt: data.sqFt,
-                image: data.image,
-                images: data.images || (data.image ? [data.image] : []),
+                image: safeImage,
+                images: cleanImages.length > 0 ? cleanImages : [safeImage],
                 video: data.video || undefined,
                 type: data.type,
                 description: data.description,
