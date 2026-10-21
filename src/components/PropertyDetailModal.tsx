@@ -18,7 +18,12 @@ import {
   Award,
 } from 'lucide-react';
 import { Property } from '../types.ts';
-import { Translations, Language } from '../i18n/translations.ts';
+import {
+  Translations,
+  Language,
+  translatePropertyType,
+  translatePropertyDescription,
+} from '../i18n/translations.ts';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase.ts';
 import { formatVideoEmbedUrl } from '../utils/media.ts';
@@ -110,9 +115,10 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
     }, 5000);
   };
 
-  const isForSale = property.status === 'FOR SALE';
+  const isForSale = property.status === 'FOR SALE' || property.status === 'À VENDRE';
+  const isRent = property.status === 'FOR RENT' || property.status === 'À LOUER';
   const statusLabel = isForSale ? featuredT.forSale : featuredT.forRent;
-  const periodLabel = property.period ? (featuredT.forRent === 'À LOUER' ? ' /mois' : property.period) : '';
+  const periodLabel = isRent ? (lang === 'fr' ? ' /mois' : ' /mo') : '';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
@@ -199,7 +205,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
               {statusLabel}
             </span>
             <span className="text-xs font-medium bg-black/50 backdrop-blur-md text-white px-2.5 py-1 rounded">
-              {property.type}
+              {translatePropertyType(property.type, lang)}
             </span>
           </div>
 
@@ -299,7 +305,11 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                 {property.paymentStatus === 'PAID' && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                     <CheckCircle className="w-3 h-3 text-emerald-600" />
-                    <span>Paiement SasPay validé ({property.paymentAmount || 'Acquitté'})</span>
+                    <span>
+                      {lang === 'fr'
+                        ? `Paiement SasPay validé (${property.paymentAmount || 'Acquitté'})`
+                        : `SasPay payment verified (${property.paymentAmount || 'Paid'})`}
+                    </span>
                   </span>
                 )}
               </div>
@@ -319,7 +329,9 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
           {property.type === 'Land / Plot' || property.type === 'Terrain / Parcelle' || (property.beds === 0 && property.baths === 0) ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100 text-center">
               <div className="flex flex-col items-center">
-                <span className="text-xs text-slate-400">Nature du bien</span>
+                <span className="text-xs text-slate-400">
+                  {lang === 'fr' ? 'Nature du bien' : 'Property Type'}
+                </span>
                 <span className="text-sm font-bold text-[#082653] mt-0.5">{t.landPlot}</span>
               </div>
               <div className="flex flex-col items-center">
@@ -330,9 +342,13 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
               </div>
               <div className="col-span-2 sm:col-span-1 flex flex-col items-center">
                 <span className="text-xs text-slate-400 flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5" /> Viabilisation & Accès
+                  <ShieldCheck className="w-3.5 h-3.5" />{' '}
+                  {lang === 'fr' ? 'Viabilisation & Accès' : 'Utilities & Access'}
                 </span>
-                <span className="text-xs font-semibold text-slate-800 mt-1">{property.parking || 'Viabilisé & Borné'}</span>
+                <span className="text-xs font-semibold text-slate-800 mt-1">
+                  {property.parking ||
+                    (lang === 'fr' ? 'Viabilisé & Borné' : 'Serviced & Demarcated')}
+                </span>
               </div>
             </div>
           ) : (
@@ -393,7 +409,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                 </div>
               </div>
               <span className="text-xs font-semibold text-red-700 flex items-center gap-1">
-                Lancer <ChevronRight className="w-3.5 h-3.5" />
+                {lang === 'fr' ? 'Lancer' : 'Play'} <ChevronRight className="w-3.5 h-3.5" />
               </span>
             </div>
           )}
@@ -404,7 +420,12 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
               {t.aboutHome}
             </h3>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-              {property.description}
+              {translatePropertyDescription(
+                property.description,
+                property.city,
+                property.country,
+                lang
+              )}
             </p>
           </div>
 

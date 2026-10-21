@@ -278,6 +278,7 @@ export const AllPropertiesModal: React.FC<AllPropertiesModalProps> = ({
                   onSelectProperty(p);
                 }}
                 t={featuredT}
+                lang={lang}
                 currentUserId={currentUserId}
                 onDeleteProperty={onDeleteProperty}
               />

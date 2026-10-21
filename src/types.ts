@@ -1,4 +1,4 @@
-export type PropertyStatus = 'FOR SALE' | 'FOR RENT';
+export type PropertyStatus = 'FOR SALE' | 'FOR RENT' | 'À VENDRE' | 'À LOUER';
 
 export interface Property {
   id: string;

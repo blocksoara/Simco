@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ArrowRight, ChevronRight, ChevronLeft } from 'lucide-react';
 import { Property } from '../types.ts';
 import { PropertyCard } from './PropertyCard.tsx';
-import { Translations } from '../i18n/translations.ts';
+import { Translations, Language } from '../i18n/translations.ts';
 
 interface FeaturedPropertiesProps {
   properties: Property[];
@@ -12,6 +12,7 @@ interface FeaturedPropertiesProps {
   onViewAll: () => void;
   onResetFilters: () => void;
   t: Translations['featured'];
+  lang?: Language;
   currentUserId?: string;
   onDeleteProperty?: (propertyId: string) => Promise<void> | void;
 }
@@ -24,6 +25,7 @@ export const FeaturedProperties: React.FC<FeaturedPropertiesProps> = ({
   onViewAll,
   onResetFilters,
   t,
+  lang = 'fr',
   currentUserId,
   onDeleteProperty,
 }) => {
@@ -95,6 +97,7 @@ export const FeaturedProperties: React.FC<FeaturedPropertiesProps> = ({
                 onToggleFavorite={onToggleFavorite}
                 onSelectProperty={onSelectProperty}
                 t={t}
+                lang={lang}
                 currentUserId={currentUserId}
                 onDeleteProperty={onDeleteProperty}
               />

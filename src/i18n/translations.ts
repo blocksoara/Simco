@@ -245,6 +245,92 @@ export function getAllCountriesList(lang: Language): CountryOption[] {
     });
 }
 
+/**
+ * Translates property types seamlessly between French and English
+ */
+export function translatePropertyType(type: string | undefined, lang: Language): string {
+  if (!type) return lang === 'fr' ? 'Bien immobilier' : 'Real Estate';
+  const clean = type.toLowerCase().trim();
+  if (clean.includes('single') || clean.includes('individuelle') || clean.includes('maison')) {
+    return lang === 'fr' ? 'Maison individuelle' : 'Single Family Home';
+  }
+  if (
+    clean.includes('condo') ||
+    clean.includes('appartement') ||
+    clean.includes('apartment') ||
+    clean.includes('combo')
+  ) {
+    return lang === 'fr' ? 'Appartement / Condo' : 'Condo / Apartment';
+  }
+  if (clean.includes('côtière') || clean.includes('coastal')) {
+    return lang === 'fr' ? 'Villa côtière' : 'Coastal Villa';
+  }
+  if (clean.includes('prestige') || clean.includes('luxury') || clean.includes('luxe')) {
+    return lang === 'fr' ? 'Villa de prestige' : 'Luxury Villa';
+  }
+  if (
+    clean.includes('terrain') ||
+    clean.includes('parcelle') ||
+    clean.includes('land') ||
+    clean.includes('plot')
+  ) {
+    return lang === 'fr' ? 'Terrain / Parcelle' : 'Land / Plot';
+  }
+  return type;
+}
+
+/**
+ * Translates rental periods seamlessly
+ */
+export function translatePeriod(period: string | undefined, isRent: boolean, lang: Language): string {
+  if (!isRent && !period) return '';
+  return lang === 'fr' ? ' /mois' : ' /mo';
+}
+
+/**
+ * Translates property status badge
+ */
+export function translateStatus(status: string | undefined, lang: Language): string {
+  const isRent = status === 'FOR RENT' || status === 'À LOUER';
+  if (isRent) {
+    return lang === 'fr' ? 'À LOUER' : 'FOR RENT';
+  }
+  return lang === 'fr' ? 'À VENDRE' : 'FOR SALE';
+}
+
+/**
+ * Translates default generated property descriptions
+ */
+export function translatePropertyDescription(
+  description: string | undefined,
+  city: string | undefined,
+  country: string | undefined,
+  lang: Language
+): string {
+  if (!description) {
+    return lang === 'fr'
+      ? `Propriété d'exception située à ${city || 'cadre privilégié'} (${country || 'International'}). Prestations et finitions haut de gamme.`
+      : `Exceptional luxury residence located in ${city || 'prime area'} (${country || 'International'}). Premium finishes and craftsmanship.`;
+  }
+  if (
+    description.includes("Superbe terrain / parcelle d'exception") ||
+    description.includes('Exceptional prime land / buildable plot')
+  ) {
+    return lang === 'fr'
+      ? `Superbe terrain / parcelle d'exception situé à ${city || 'un cadre privilégié'} (${country || ''}). Opportunité rare pour développement résidentiel ou commercial.`
+      : `Exceptional prime land / buildable plot located in ${city || 'prime area'} (${country || ''}). Outstanding residential or commercial development potential.`;
+  }
+  if (
+    description.includes("Propriété d'exception récemment publiée") ||
+    description.includes('Exceptional luxury residence newly listed')
+  ) {
+    return lang === 'fr'
+      ? `Propriété d'exception récemment publiée dans un cadre privilégié (${country || ''}). Finitions haut de gamme, prestations luxueuses et luminosité remarquable.`
+      : `Exceptional luxury residence newly listed in a prime area (${country || ''}). High-end architectural craftsmanship and finishes.`;
+  }
+  return description;
+}
+
 export interface Translations {
   announcement: {
     trusted: string;

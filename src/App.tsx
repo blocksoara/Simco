@@ -30,8 +30,23 @@ import { collection, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
 import { db } from './lib/firebase.ts';
 
 export default function App() {
-  // French is the default language as requested: "mets le français la langue par defaut"
-  const [lang, setLang] = useState<Language>('fr');
+  // Persistent language state (defaulting to French 'fr')
+  const [lang, setLangState] = useState<Language>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('homeluxe_lang');
+      if (saved === 'fr' || saved === 'en') return saved;
+    }
+    return 'fr';
+  });
+
+  const setLang = (newLang: Language) => {
+    setLangState(newLang);
+    try {
+      localStorage.setItem('homeluxe_lang', newLang);
+      document.documentElement.lang = newLang;
+    } catch (_) {}
+  };
+
   const t = translations[lang];
 
   const { user, userFavorites, toggleFavoriteInCloud } = useAuth();
@@ -243,11 +258,14 @@ export default function App() {
       if (seenIds.has(prop.id)) return false;
       seenIds.add(prop.id);
 
-      // Tab filter
-      if (appliedFilters.tab === 'Buy' && prop.status !== 'FOR SALE') {
+      // Tab filter (handles both English and French status values)
+      const isPropForSale = prop.status === 'FOR SALE' || prop.status === 'À VENDRE';
+      const isPropForRent = prop.status === 'FOR RENT' || prop.status === 'À LOUER';
+
+      if (appliedFilters.tab === 'Buy' && !isPropForSale) {
         return false;
       }
-      if (appliedFilters.tab === 'Rent' && prop.status !== 'FOR RENT') {
+      if (appliedFilters.tab === 'Rent' && !isPropForRent) {
         return false;
       }
 
@@ -470,6 +488,7 @@ export default function App() {
           }}
           onResetFilters={handleResetFilters}
           t={t.featured}
+          lang={lang}
           currentUserId={user?.uid}
           onDeleteProperty={handleDeleteProperty}
         />

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Heart, Bed, Bath, Maximize2, Play, Image as ImageIcon, Trash2, Award } from 'lucide-react';
 import { Property } from '../types.ts';
-import { Translations } from '../i18n/translations.ts';
+import { Translations, Language, translatePropertyType } from '../i18n/translations.ts';
 
 interface PropertyCardProps {
   property: Property;
@@ -9,6 +9,7 @@ interface PropertyCardProps {
   onToggleFavorite: (id: string, e: React.MouseEvent) => void;
   onSelectProperty: (property: Property) => void;
   t: Translations['featured'];
+  lang?: Language;
   currentUserId?: string;
   onDeleteProperty?: (propertyId: string) => Promise<void> | void;
 }
@@ -19,17 +20,20 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   onToggleFavorite,
   onSelectProperty,
   t,
+  lang = 'fr',
   currentUserId,
   onDeleteProperty,
 }) => {
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const isForSale = property.status === 'FOR SALE';
+  const isForSale = property.status === 'FOR SALE' || property.status === 'À VENDRE';
+  const isRent = property.status === 'FOR RENT' || property.status === 'À LOUER';
   const statusLabel = isForSale ? t.forSale : t.forRent;
-  const periodLabel = property.period ? (t.forRent === 'À LOUER' ? ' /mois' : property.period) : '';
+  const periodLabel = isRent ? (lang === 'fr' || t.forRent === 'À LOUER' ? ' /mois' : ' /mo') : '';
   const photoCount = property.images && property.images.length > 1 ? property.images.length : 0;
   const hasVideo = !!property.video;
+
 
   // Check if current user is author of this listing
   const isAuthor = Boolean(currentUserId && property.authorUid && property.authorUid === currentUserId);

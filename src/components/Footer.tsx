@@ -1,16 +1,24 @@
 import React from 'react';
-import { Phone, Mail, MapPin, Facebook, Instagram, Twitter, Linkedin } from 'lucide-react';
+import { Phone, Mail, MapPin, Facebook, Instagram, Twitter, Linkedin, Globe } from 'lucide-react';
 import { Language, Translations } from '../i18n/translations.ts';
 
 interface FooterProps {
   onNavigate: (section: string) => void;
   onOpenValuation: () => void;
   lang: Language;
+  setLang?: (lang: Language) => void;
   t: Translations['footer'];
   onTriggerAdmin?: () => void;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenValuation, lang, t, onTriggerAdmin }) => {
+export const Footer: React.FC<FooterProps> = ({
+  onNavigate,
+  onOpenValuation,
+  lang,
+  setLang,
+  t,
+  onTriggerAdmin,
+}) => {
   const clickCountRef = React.useRef(0);
   const clickTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 

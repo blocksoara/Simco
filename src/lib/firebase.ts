@@ -4,9 +4,8 @@ import {
   GoogleAuthProvider,
   setPersistence,
   browserLocalPersistence,
-  browserSessionPersistence,
 } from 'firebase/auth';
-import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import { initializeFirestore, getFirestore, Firestore } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
@@ -16,7 +15,6 @@ export const auth = getAuth(app);
 // Ensure persistent local authentication across sessions, iframes, and page reloads
 if (typeof window !== 'undefined') {
   setPersistence(auth, browserLocalPersistence).catch((err) => {
-    // Keep local persistence as default; do not downgrade to session persistence
     console.info('[Homeluxe Auth] Note on local persistence:', err?.message || err);
   });
 }
@@ -24,21 +22,22 @@ if (typeof window !== 'undefined') {
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 
-// When firestoreDatabaseId is specified, pass it to getFirestore
-export const db = firebaseConfig.firestoreDatabaseId
-  ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
-  : getFirestore(app);
-
-// Test Firestore connection on boot as mandated
-export async function testFirestoreConnection() {
-  try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.warn('Firestore offline check:', error.message);
-    }
-  }
+// Initialize Firestore with auto-detect long polling to prevent 10s backend connection timeout in iframes and proxies
+let firestoreDb: Firestore;
+try {
+  firestoreDb = initializeFirestore(
+    app,
+    {
+      experimentalAutoDetectLongPolling: true,
+    },
+    firebaseConfig.firestoreDatabaseId || undefined
+  );
+} catch {
+  // If already initialized (e.g. during dev HMR), retrieve instance
+  firestoreDb = firebaseConfig.firestoreDatabaseId
+    ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
+    : getFirestore(app);
 }
 
-// Execute background connection test
-testFirestoreConnection().catch(() => {});
+export const db = firestoreDb;
+
