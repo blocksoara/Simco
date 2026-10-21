@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowRight, Home, TrendingUp } from 'lucide-react';
 import { Translations } from '../i18n/translations.ts';
+import valuationLivingRoomImg from '../assets/images/valuation_living_room_1791898474079.jpg';
 
 interface HomeValuationBannerProps {
   onOpenValuation: () => void;
@@ -42,10 +43,14 @@ export const HomeValuationBanner: React.FC<HomeValuationBannerProps> = ({
         {/* Right Photographic Image with Floating Valuation Card */}
         <div className="relative min-h-[260px] sm:min-h-[300px] lg:min-h-[320px] bg-slate-100 overflow-hidden">
           <img
-            src="/src/assets/images/valuation_living_room_1791898474079.jpg"
+            src={valuationLivingRoomImg}
             alt="Bright, elegant luxury penthouse living room overlooking city skyline"
             referrerPolicy="no-referrer"
             className="w-full h-full object-cover"
+            onError={(e) => {
+              e.currentTarget.src =
+                'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1600&q=85';
+            }}
           />
 
           {/* Floating Valuation Estimate Card */}

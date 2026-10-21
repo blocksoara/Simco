@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowRight, Play } from 'lucide-react';
 import { Translations } from '../i18n/translations.ts';
+import heroImage from '../assets/images/hero_luxury_home_1791898470387.jpg';
 
 interface HeroSectionProps {
   onExploreProperties: () => void;
@@ -20,14 +21,19 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         {/* Background Image of Luxury House at Dusk */}
         <div className="absolute inset-0 z-0">
           <img
-            src="/src/assets/images/hero_luxury_home_1791898470387.jpg"
+            src={heroImage}
             alt="Luxury contemporary architectural villa at dusk with illuminated pool"
             referrerPolicy="no-referrer"
-            className="w-full h-full object-cover object-right lg:object-center"
+            className="w-full h-full object-cover object-center sm:object-right lg:object-center"
+            onError={(e) => {
+              // Guaranteed high-resolution architectural fallback
+              e.currentTarget.src =
+                'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=2400&q=85';
+            }}
           />
           {/* Subtle gradient scrim ensuring dark text is 100% legible on the left while preserving photographic clarity on the right */}
-          <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/80 to-transparent lg:w-[62%] pointer-events-none" />
-          <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-transparent to-white/40 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/85 to-white/20 sm:to-transparent lg:w-[60%] pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-white/40 pointer-events-none" />
         </div>
 
         {/* Hero Content on the left */}
