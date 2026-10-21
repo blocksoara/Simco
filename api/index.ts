@@ -7,7 +7,8 @@ const app = express();
 app.use(express.json());
 
 const SASPAY_API_BASE = 'https://api.saspay.me/api/v1';
-const SASPAY_API_KEY = process.env.SASPAY_API_KEY || '';
+const SASPAY_API_KEY =
+  process.env.SASPAY_API_KEY || 'sk_live_yPRAneq68CjDbvri30C4uJe3TBKo5C7vyCbh1oM826o';
 
 const SASPAY_MINIMUMS: Record<string, number> = {
   EUR: 1.0,
@@ -166,6 +167,16 @@ app.post('/api/saspay/create-checkout', async (req, res) => {
         errorMsg = data.message;
       } else if (typeof data.error === 'string' && data.error.trim()) {
         errorMsg = data.error;
+      } else if (data.error && typeof data.error === 'object') {
+        if (typeof data.error.detail === 'string' && data.error.detail.trim()) {
+          errorMsg = data.error.detail;
+        } else {
+          const parts = Object.entries(data.error).map(([k, v]) => {
+            const valStr = Array.isArray(v) ? v.join(', ') : String(v);
+            return `${k}: ${valStr}`;
+          });
+          if (parts.length > 0) errorMsg = parts.join(' | ');
+        }
       }
       return res.status(response.status).json({
         success: false,
