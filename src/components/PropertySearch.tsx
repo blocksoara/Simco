@@ -2,6 +2,7 @@ import React from 'react';
 import { Search, ChevronDown, Globe } from 'lucide-react';
 import { SearchFilters } from '../types.ts';
 import { Translations, getSortedCountries, Language } from '../i18n/translations.ts';
+import { getPriceRangesForCountry } from '../data/currencies.ts';
 
 interface PropertySearchProps {
   filters: SearchFilters;
@@ -24,8 +25,12 @@ export const PropertySearch: React.FC<PropertySearchProps> = ({
 }) => {
   const sortedCountries = getSortedCountries(lang);
 
+  const priceRanges = React.useMemo(() => {
+    return getPriceRangesForCountry(filters.country, filters.tab, lang);
+  }, [filters.country, filters.tab, lang]);
+
   const handleTabChange = (tab: 'Buy' | 'Rent' | 'Sell') => {
-    setFilters((prev) => ({ ...prev, tab }));
+    setFilters((prev) => ({ ...prev, tab, priceRange: 'all' }));
     if (tab === 'Sell') {
       onOpenValuation();
     } else if (onTabChange) {
@@ -80,7 +85,11 @@ export const PropertySearch: React.FC<PropertySearchProps> = ({
               <select
                 value={filters.country}
                 onChange={(e) =>
-                  setFilters((prev) => ({ ...prev, country: e.target.value }))
+                  setFilters((prev) => ({
+                    ...prev,
+                    country: e.target.value,
+                    priceRange: 'all',
+                  }))
                 }
                 className="w-full text-xs text-slate-800 font-medium appearance-none bg-transparent focus:outline-none pr-5 cursor-pointer truncate"
               >
@@ -151,12 +160,13 @@ export const PropertySearch: React.FC<PropertySearchProps> = ({
                 onChange={(e) =>
                   setFilters((prev) => ({ ...prev, priceRange: e.target.value }))
                 }
-                className="w-full text-xs text-slate-800 appearance-none bg-transparent focus:outline-none pr-5 cursor-pointer truncate"
+                className="w-full text-xs text-slate-800 font-medium appearance-none bg-transparent focus:outline-none pr-5 cursor-pointer truncate"
               >
-                <option value="$Min - $Max">{t.minMax}</option>
-                <option value="under-700k">{t.under700k}</option>
-                <option value="700k-1m">{t.range700k1m}</option>
-                <option value="1m-plus">{t.above1m}</option>
+                {priceRanges.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
               </select>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>

@@ -184,3 +184,185 @@ export function getDefaultCurrencyForCountry(countryName: string): string {
 
   return 'EUR';
 }
+
+export interface PriceRangeOption {
+  value: string;
+  label: string;
+  min?: number;
+  max?: number;
+}
+
+export function getPriceRangesForCountry(
+  countryName: string,
+  tab: 'Buy' | 'Rent' | 'Sell',
+  lang: 'fr' | 'en' = 'fr'
+): PriceRangeOption[] {
+  const isRent = tab === 'Rent';
+  const currencyCode = (!countryName || countryName === 'all')
+    ? (lang === 'fr' ? 'EUR' : 'USD')
+    : getDefaultCurrencyForCountry(countryName);
+
+  const curr = getCurrency(currencyCode);
+  const isFr = lang === 'fr';
+
+  // Central & West Africa: Franc CFA (XAF & XOF)
+  if (curr.code === 'XAF' || curr.code === 'XOF') {
+    if (isRent) {
+      return [
+        { value: 'all', label: isFr ? 'Tous les loyers (FCFA)' : 'All rental prices (FCFA)' },
+        { value: '0-250000', label: isFr ? 'Moins de 250 000 FCFA' : 'Under 250,000 FCFA', min: 0, max: 250000 },
+        { value: '250000-750000', label: isFr ? '250 000 - 750 000 FCFA' : '250,000 - 750,000 FCFA', min: 250000, max: 750000 },
+        { value: '750000-plus', label: isFr ? '750 000 FCFA et +' : '750,000+ FCFA', min: 750000 },
+      ];
+    }
+    return [
+      { value: 'all', label: isFr ? 'Fourchette de prix (FCFA)' : 'Price range (FCFA)' },
+      { value: '0-30000000', label: isFr ? 'Moins de 30 000 000 FCFA' : 'Under 30M FCFA', min: 0, max: 30000000 },
+      { value: '30000000-80000000', label: isFr ? '30 000 000 - 80 000 000 FCFA' : '30M - 80M FCFA', min: 30000000, max: 80000000 },
+      { value: '80000000-plus', label: isFr ? 'Plus de 80 000 000 FCFA' : '80M+ FCFA', min: 80000000 },
+    ];
+  }
+
+  // Eurozone
+  if (curr.code === 'EUR') {
+    if (isRent) {
+      return [
+        { value: 'all', label: isFr ? 'Tous les loyers (€)' : 'All rental prices (€)' },
+        { value: '0-1500', label: isFr ? 'Moins de 1 500 €' : 'Under 1,500 €', min: 0, max: 1500 },
+        { value: '1500-3500', label: isFr ? '1 500 € - 3 500 €' : '1,500 € - 3,500 €', min: 1500, max: 3500 },
+        { value: '3500-plus', label: isFr ? '3 500 € et +' : '3,500 €+', min: 3500 },
+      ];
+    }
+    return [
+      { value: 'all', label: isFr ? 'Fourchette de prix (€)' : 'Price range (€)' },
+      { value: '0-500000', label: isFr ? 'Moins de 500 000 €' : 'Under 500,000 €', min: 0, max: 500000 },
+      { value: '500000-1200000', label: isFr ? '500 000 € - 1 200 000 €' : '500,000 € - 1,200,000 €', min: 500000, max: 1200000 },
+      { value: '1200000-plus', label: isFr ? 'Plus de 1 200 000 €' : '1,200,000 €+', min: 1200000 },
+    ];
+  }
+
+  // Switzerland (CHF)
+  if (curr.code === 'CHF') {
+    if (isRent) {
+      return [
+        { value: 'all', label: isFr ? 'Tous les loyers (CHF)' : 'All rental prices (CHF)' },
+        { value: '0-2500', label: isFr ? 'Moins de 2 500 CHF' : 'Under 2,500 CHF', min: 0, max: 2500 },
+        { value: '2500-5000', label: isFr ? '2 500 - 5 000 CHF' : '2,500 - 5,000 CHF', min: 2500, max: 5000 },
+        { value: '5000-plus', label: isFr ? '5 000 CHF et +' : '5,000+ CHF', min: 5000 },
+      ];
+    }
+    return [
+      { value: 'all', label: isFr ? 'Fourchette de prix (CHF)' : 'Price range (CHF)' },
+      { value: '0-1200000', label: isFr ? 'Moins de 1 200 000 CHF' : 'Under 1,200,000 CHF', min: 0, max: 1200000 },
+      { value: '1200000-2500000', label: isFr ? '1 200 000 - 2 500 000 CHF' : '1,200,000 - 2,500,000 CHF', min: 1200000, max: 2500000 },
+      { value: '2500000-plus', label: isFr ? 'Plus de 2 500 000 CHF' : '2,500,000+ CHF', min: 2500000 },
+    ];
+  }
+
+  // Canada (CAD)
+  if (curr.code === 'CAD') {
+    if (isRent) {
+      return [
+        { value: 'all', label: isFr ? 'Tous les loyers (CA$)' : 'All rental prices (CA$)' },
+        { value: '0-1800', label: isFr ? 'Moins de 1 800 CA$' : 'Under 1,800 CA$', min: 0, max: 1800 },
+        { value: '1800-3500', label: isFr ? '1 800 CA$ - 3 500 CA$' : '1,800 CA$ - 3,500 CA$', min: 1800, max: 3500 },
+        { value: '3500-plus', label: isFr ? '3 500 CA$ et +' : '3,500 CA$+', min: 3500 },
+      ];
+    }
+    return [
+      { value: 'all', label: isFr ? 'Fourchette de prix (CA$)' : 'Price range (CA$)' },
+      { value: '0-700000', label: isFr ? 'Moins de 700 000 CA$' : 'Under 700,000 CA$', min: 0, max: 700000 },
+      { value: '700000-1500000', label: isFr ? '700 000 CA$ - 1 500 000 CA$' : '700,000 CA$ - 1,500,000 CA$', min: 700000, max: 1500000 },
+      { value: '1500000-plus', label: isFr ? 'Plus de 1 500 000 CA$' : '1,500,000 CA$+', min: 1500000 },
+    ];
+  }
+
+  // United Kingdom (GBP)
+  if (curr.code === 'GBP') {
+    if (isRent) {
+      return [
+        { value: 'all', label: isFr ? 'Tous les loyers (£)' : 'All rental prices (£)' },
+        { value: '0-1500', label: isFr ? 'Moins de £1 500' : 'Under £1,500', min: 0, max: 1500 },
+        { value: '1500-3500', label: isFr ? '£1 500 - £3 500' : '£1,500 - £3,500', min: 1500, max: 3500 },
+        { value: '3500-plus', label: isFr ? 'Plus de £3 500' : '£3,500+', min: 3500 },
+      ];
+    }
+    return [
+      { value: 'all', label: isFr ? 'Fourchette de prix (£)' : 'Price range (£)' },
+      { value: '0-500000', label: isFr ? 'Moins de £500 000' : 'Under £500,000', min: 0, max: 500000 },
+      { value: '500000-1200000', label: isFr ? '£500 000 - £1 200 000' : '£500,000 - £1,200,000', min: 500000, max: 1200000 },
+      { value: '1200000-plus', label: isFr ? 'Plus de £1 200 000' : '£1,200,000+', min: 1200000 },
+    ];
+  }
+
+  // UAE (AED)
+  if (curr.code === 'AED') {
+    if (isRent) {
+      return [
+        { value: 'all', label: isFr ? 'Tous les loyers (AED)' : 'All rental prices (AED)' },
+        { value: '0-120000', label: isFr ? 'Moins de 120 000 AED' : 'Under 120,000 AED', min: 0, max: 120000 },
+        { value: '120000-250000', label: isFr ? '120 000 - 250 000 AED' : '120,000 - 250,000 AED', min: 120000, max: 250000 },
+        { value: '250000-plus', label: isFr ? 'Plus de 250 000 AED' : '250,000+ AED', min: 250000 },
+      ];
+    }
+    return [
+      { value: 'all', label: isFr ? 'Fourchette de prix (AED)' : 'Price range (AED)' },
+      { value: '0-2000000', label: isFr ? 'Moins de 2 000 000 AED' : 'Under 2,000,000 AED', min: 0, max: 2000000 },
+      { value: '2000000-5000000', label: isFr ? '2 000 000 - 5 000 000 AED' : '2,000,000 - 5,000,000 AED', min: 2000000, max: 5000000 },
+      { value: '5000000-plus', label: isFr ? 'Plus de 5 000 000 AED' : '5,000,000+ AED', min: 5000000 },
+    ];
+  }
+
+  // Morocco (MAD)
+  if (curr.code === 'MAD') {
+    if (isRent) {
+      return [
+        { value: 'all', label: isFr ? 'Tous les loyers (MAD)' : 'All rental prices (MAD)' },
+        { value: '0-10000', label: isFr ? 'Moins de 10 000 MAD' : 'Under 10,000 MAD', min: 0, max: 10000 },
+        { value: '10000-25000', label: isFr ? '10 000 - 25 000 MAD' : '10,000 - 25,000 MAD', min: 10000, max: 25000 },
+        { value: '25000-plus', label: isFr ? '25 000 MAD et +' : '25,000+ MAD', min: 25000 },
+      ];
+    }
+    return [
+      { value: 'all', label: isFr ? 'Fourchette de prix (MAD)' : 'Price range (MAD)' },
+      { value: '0-2000000', label: isFr ? 'Moins de 2 000 000 MAD' : 'Under 2,000,000 MAD', min: 0, max: 2000000 },
+      { value: '2000000-5000000', label: isFr ? '2 000 000 - 5 000 000 MAD' : '2,000,000 - 5,000,000 MAD', min: 2000000, max: 5000000 },
+      { value: '5000000-plus', label: isFr ? 'Plus de 5 000 000 MAD' : '5,000,000+ MAD', min: 5000000 },
+    ];
+  }
+
+  // DRC (CDF)
+  if (curr.code === 'CDF') {
+    if (isRent) {
+      return [
+        { value: 'all', label: isFr ? 'Tous les loyers (FC)' : 'All rental prices (FC)' },
+        { value: '0-1500000', label: isFr ? 'Moins de 1 500 000 FC' : 'Under 1,500,000 FC', min: 0, max: 1500000 },
+        { value: '1500000-4000000', label: isFr ? '1 500 000 - 4 000 000 FC' : '1,500,000 - 4,000,000 FC', min: 1500000, max: 4000000 },
+        { value: '4000000-plus', label: isFr ? '4 000 000 FC et +' : '4,000,000+ FC', min: 4000000 },
+      ];
+    }
+    return [
+      { value: 'all', label: isFr ? 'Fourchette de prix (FC)' : 'Price range (FC)' },
+      { value: '0-150000000', label: isFr ? 'Moins de 150 000 000 FC' : 'Under 150M FC', min: 0, max: 150000000 },
+      { value: '150000000-500000000', label: isFr ? '150 000 000 - 500 000 000 FC' : '150M - 500M FC', min: 150000000, max: 500000000 },
+      { value: '500000000-plus', label: isFr ? 'Plus de 500 000 000 FC' : '500M+ FC', min: 500000000 },
+    ];
+  }
+
+  // Global / Default USD ($)
+  if (isRent) {
+    return [
+      { value: 'all', label: isFr ? 'Tous les loyers ($)' : 'All rental prices ($)' },
+      { value: '0-2500', label: isFr ? 'Moins de 2 500 $' : 'Under $2,500', min: 0, max: 2500 },
+      { value: '2500-6000', label: isFr ? '2 500 $ - 6 000 $' : '$2,500 - $6,000', min: 2500, max: 6000 },
+      { value: '6000-plus', label: isFr ? '6 000 $ et +' : '$6,000+', min: 6000 },
+    ];
+  }
+  return [
+    { value: 'all', label: isFr ? 'Fourchette de prix ($)' : 'Price range ($)' },
+    { value: '0-700000', label: isFr ? 'Moins de 700 000 $' : 'Under $700,000', min: 0, max: 700000 },
+    { value: '700000-1200000', label: isFr ? '700 000 $ - 1 200 000 $' : '$700,000 - $1,200,000', min: 700000, max: 1200000 },
+    { value: '1200000-plus', label: isFr ? 'Plus de 1 200 000 $' : '$1,200,000+', min: 1200000 },
+  ];
+}
+

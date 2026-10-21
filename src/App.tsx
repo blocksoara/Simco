@@ -194,7 +194,7 @@ export default function App() {
     country: 'all',
     location: '',
     propertyType: 'Any Type',
-    priceRange: '$Min - $Max',
+    priceRange: 'all',
     beds: 'Any',
     baths: 'Any',
   });
@@ -320,17 +320,40 @@ export default function App() {
       }
 
       // Price filter
-      if (appliedFilters.priceRange === 'under-700k' && prop.rawPrice >= 700000) {
-        return false;
-      }
       if (
-        appliedFilters.priceRange === '700k-1m' &&
-        (prop.rawPrice < 700000 || prop.rawPrice > 1000000)
+        appliedFilters.priceRange &&
+        appliedFilters.priceRange !== 'all' &&
+        appliedFilters.priceRange !== '$Min - $Max'
       ) {
-        return false;
-      }
-      if (appliedFilters.priceRange === '1m-plus' && prop.rawPrice < 1000000) {
-        return false;
+        const pRange = appliedFilters.priceRange;
+        // Legacy range filters
+        if (pRange === 'under-700k' && prop.rawPrice >= 700000) {
+          return false;
+        }
+        if (
+          pRange === '700k-1m' &&
+          (prop.rawPrice < 700000 || prop.rawPrice > 1000000)
+        ) {
+          return false;
+        }
+        if (pRange === '1m-plus' && prop.rawPrice < 1000000) {
+          return false;
+        }
+
+        // Dynamic country ranges: 'min-max' or 'min-plus' (e.g., '0-30000000', '30000000-80000000', '80000000-plus')
+        if (pRange.includes('-')) {
+          const parts = pRange.split('-');
+          const minVal = parseFloat(parts[0]);
+          if (!isNaN(minVal) && prop.rawPrice < minVal) {
+            return false;
+          }
+          if (parts[1] && parts[1] !== 'plus') {
+            const maxVal = parseFloat(parts[1]);
+            if (!isNaN(maxVal) && prop.rawPrice > maxVal) {
+              return false;
+            }
+          }
+        }
       }
 
       const isLandProperty =
