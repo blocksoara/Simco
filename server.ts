@@ -10,7 +10,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const SASPAY_API_BASE = 'https://api.saspay.me/api/v1';
-const SASPAY_API_KEY = process.env.SASPAY_API_KEY || '';
+const SASPAY_API_KEY =
+  process.env.SASPAY_API_KEY || 'sk_live_yPRAneq68CjDbvri30C4uJe3TBKo5C7vyCbh1oM826o';
 
 async function startServer() {
   const app = express();
