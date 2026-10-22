@@ -442,31 +442,43 @@ export const Navbar: React.FC<NavbarProps> = ({
             ) : (
               <button
                 onClick={onOpenAuth}
-                className="text-xs font-semibold px-2.5 py-1 text-[#082653] border border-slate-200 rounded"
+                className="text-xs font-semibold px-2.5 py-1 text-[#082653] border border-slate-200 rounded min-h-[30px]"
               >
                 {t.signIn}
               </button>
             )}
 
-            {/* Mobile Language Switcher (FR / EN) */}
-            <div className="flex items-center bg-slate-100 rounded border border-slate-200 p-0.5">
+            {/* Mobile Language Switcher (FR / EN) - High-visibility touch targets */}
+            <div className="flex items-center bg-slate-100 rounded-md border border-slate-200 p-0.5 shadow-2xs">
               <button
                 type="button"
-                onClick={() => setLang('fr')}
-                className={`px-1.5 py-0.5 text-[10px] font-bold rounded cursor-pointer transition-colors ${
-                  lang === 'fr' ? 'bg-[#082653] text-white' : 'text-slate-600'
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLang('fr');
+                }}
+                className={`px-2 py-1 text-xs font-extrabold rounded transition-all cursor-pointer min-h-[28px] min-w-[28px] flex items-center justify-center ${
+                  lang === 'fr'
+                    ? 'bg-[#082653] text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 active:bg-slate-200'
                 }`}
                 title="Passer en Français"
+                aria-label="Passer en Français"
               >
                 FR
               </button>
               <button
                 type="button"
-                onClick={() => setLang('en')}
-                className={`px-1.5 py-0.5 text-[10px] font-bold rounded cursor-pointer transition-colors ${
-                  lang === 'en' ? 'bg-[#082653] text-white' : 'text-slate-600'
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLang('en');
+                }}
+                className={`px-2 py-1 text-xs font-extrabold rounded transition-all cursor-pointer min-h-[28px] min-w-[28px] flex items-center justify-center ${
+                  lang === 'en'
+                    ? 'bg-[#082653] text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 active:bg-slate-200'
                 }`}
                 title="Switch to English"
+                aria-label="Switch to English"
               >
                 EN
               </button>
@@ -474,7 +486,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-1.5 text-slate-700 hover:text-slate-900 focus:outline-none"
+              className="p-1.5 text-slate-700 hover:text-slate-900 focus:outline-none min-h-[36px] min-w-[36px] flex items-center justify-center cursor-pointer"
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -487,26 +499,36 @@ export const Navbar: React.FC<NavbarProps> = ({
       {mobileMenuOpen && (
         <div className="lg:hidden border-t border-slate-100 bg-white px-4 pt-3 pb-6 space-y-2 animate-in slide-in-from-top-2">
           {/* Mobile Drawer Language Row */}
-          <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-100 mb-2">
-            <span className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-              <Globe className="w-3.5 h-3.5 text-[#082653]" />
+          <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200 mb-3">
+            <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+              <Globe className="w-4 h-4 text-[#082653]" />
               <span>{lang === 'fr' ? 'Langue du site' : 'Site Language'}</span>
             </span>
-            <div className="flex items-center gap-1 bg-white p-0.5 rounded-md border border-slate-200">
+            <div className="flex items-center gap-1.5 bg-white p-1 rounded-lg border border-slate-200 shadow-2xs">
               <button
                 type="button"
-                onClick={() => setLang('fr')}
-                className={`px-2 py-1 text-xs font-bold rounded transition-colors cursor-pointer ${
-                  lang === 'fr' ? 'bg-[#082653] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                onClick={() => {
+                  setLang('fr');
+                  setMobileMenuOpen(false);
+                }}
+                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
+                  lang === 'fr'
+                    ? 'bg-[#082653] text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 bg-slate-50'
                 }`}
               >
                 Français
               </button>
               <button
                 type="button"
-                onClick={() => setLang('en')}
-                className={`px-2 py-1 text-xs font-bold rounded transition-colors cursor-pointer ${
-                  lang === 'en' ? 'bg-[#082653] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                onClick={() => {
+                  setLang('en');
+                  setMobileMenuOpen(false);
+                }}
+                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
+                  lang === 'en'
+                    ? 'bg-[#082653] text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 bg-slate-50'
                 }`}
               >
                 English

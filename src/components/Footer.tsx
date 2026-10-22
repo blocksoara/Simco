@@ -300,7 +300,32 @@ export const Footer: React.FC<FooterProps> = ({
             {t.rights}
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 sm:gap-6">
+            {setLang && (
+              <div className="flex items-center gap-1 bg-[#082653] px-2 py-1 rounded-md border border-white/10 text-[11px]">
+                <Globe className="w-3 h-3 text-slate-300 mr-1" />
+                <button
+                  type="button"
+                  onClick={() => setLang('fr')}
+                  className={`px-1.5 py-0.5 rounded font-bold cursor-pointer transition-colors ${
+                    lang === 'fr' ? 'bg-[#1D58A7] text-white font-extrabold' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  FR
+                </button>
+                <span className="text-slate-600">/</span>
+                <button
+                  type="button"
+                  onClick={() => setLang('en')}
+                  className={`px-1.5 py-0.5 rounded font-bold cursor-pointer transition-colors ${
+                    lang === 'en' ? 'bg-[#1D58A7] text-white font-extrabold' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  EN
+                </button>
+              </div>
+            )}
+
             <button
               onClick={() => onNavigate('Privacy Policy')}
               className="hover:text-slate-200 transition-colors cursor-pointer"

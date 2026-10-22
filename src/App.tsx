@@ -534,6 +534,7 @@ export default function App() {
         onNavigate={handleFooterNavigate}
         onOpenValuation={() => setIsValuationOpen(true)}
         lang={lang}
+        setLang={setLang}
         t={t.footer}
         onTriggerAdmin={() => setIsAdminModalOpen(true)}
       />
