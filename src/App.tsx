@@ -30,11 +30,19 @@ import { collection, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
 import { db } from './lib/firebase.ts';
 
 export default function App() {
-  // Persistent language state (defaulting to French 'fr')
+  // Persistent language state (defaulting to French 'fr', query param, or localStorage)
   const [lang, setLangState] = useState<Language>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('homeluxe_lang');
-      if (saved === 'fr' || saved === 'en') return saved;
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const queryLang = params.get('lang');
+        if (queryLang === 'fr' || queryLang === 'en') {
+          localStorage.setItem('homeluxe_lang', queryLang);
+          return queryLang;
+        }
+        const saved = localStorage.getItem('homeluxe_lang');
+        if (saved === 'fr' || saved === 'en') return saved;
+      } catch (_) {}
     }
     return 'fr';
   });
@@ -43,9 +51,20 @@ export default function App() {
     setLangState(newLang);
     try {
       localStorage.setItem('homeluxe_lang', newLang);
-      document.documentElement.lang = newLang;
     } catch (_) {}
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = newLang;
+      document.documentElement.setAttribute('lang', newLang);
+    }
   };
+
+  // Keep DOM root language in sync
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = lang;
+      document.documentElement.setAttribute('lang', lang);
+    }
+  }, [lang]);
 
   const t = translations[lang];
 

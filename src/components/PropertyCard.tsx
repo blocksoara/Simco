@@ -86,7 +86,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
 
           {property.paymentStatus === 'PAID' && (
             <span className="text-[10px] font-bold bg-emerald-600 text-white px-1.5 py-0.5 rounded shadow-2xs flex items-center gap-1">
-              <span>✓ Payée SasPay</span>
+              <span>{lang === 'fr' ? '✓ Payée SasPay' : '✓ SasPay Verified'}</span>
             </span>
           )}
 
@@ -100,7 +100,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           {hasVideo && (
             <span className="text-[10px] font-bold bg-red-600 text-white px-1.5 py-0.5 rounded shadow-2xs flex items-center gap-1">
               <Play className="w-2.5 h-2.5 fill-current" />
-              <span>Vidéo</span>
+              <span>{lang === 'fr' ? 'Vidéo' : 'Video'}</span>
             </span>
           )}
 
