@@ -312,7 +312,7 @@ export const ListPropertyModal: React.FC<ListPropertyModalProps> = ({
     setIsCreatingCheckout(true);
     setPaymentError(null);
 
-    try {
+    const executeCheckoutRequest = async () => {
       const advertiserEmail = email.trim() || user?.email || 'contact@homeluxe.com';
       const advertiserName = name.trim() || user?.displayName || 'Annonceur Homeluxe';
       const advertiserPhone = phone.trim() || '';
@@ -321,6 +321,7 @@ export const ListPropertyModal: React.FC<ListPropertyModalProps> = ({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Accept: 'application/json',
         },
         body: JSON.stringify({
           amount: currentFee.saspayAmountString,
@@ -340,20 +341,28 @@ export const ListPropertyModal: React.FC<ListPropertyModalProps> = ({
         }),
       });
 
-      const resData = await response.json();
+      const text = await response.text();
+      let resData: any = null;
+      try {
+        resData = JSON.parse(text);
+      } catch (_) {
+        resData = null;
+      }
 
-      if (!response.ok || !resData.success) {
+      if (!response.ok || !resData || !resData.success) {
         let errMessage = 'Erreur lors de la création de la session SasPay';
-        if (typeof resData.error === 'string' && resData.error.trim()) {
+        if (resData && typeof resData.error === 'string' && resData.error.trim()) {
           errMessage = resData.error;
-        } else if (resData.error && typeof resData.error === 'object') {
+        } else if (resData && typeof resData.message === 'string' && resData.message.trim()) {
+          errMessage = resData.message;
+        } else if (resData?.error && typeof resData.error === 'object') {
           const parts = Object.entries(resData.error).map(([k, v]) => {
             const valStr = Array.isArray(v) ? v.join(', ') : String(v);
             return `${k}: ${valStr}`;
           });
           if (parts.length > 0) errMessage = parts.join(' | ');
-        } else if (resData.message) {
-          errMessage = String(resData.message);
+        } else if (response.status === 502 || response.status === 504) {
+          errMessage = 'La passerelle SasPay est momentanément indisponible (502). Veuillez réessayer.';
         }
         throw new Error(errMessage);
       }
@@ -363,6 +372,24 @@ export const ListPropertyModal: React.FC<ListPropertyModalProps> = ({
         throw new Error('SasPay n\'a pas retourné de session de paiement valide.');
       }
 
+      return session;
+    };
+
+    try {
+      let session: any = null;
+      try {
+        session = await executeCheckoutRequest();
+      } catch (firstErr: any) {
+        // If network hiccup or temporary 502, automatically retry once
+        const msg = String(firstErr?.message || '');
+        if (msg.includes('fetch') || msg.includes('502') || msg.includes('indisponible')) {
+          await new Promise((r) => setTimeout(r, 1200));
+          session = await executeCheckoutRequest();
+        } else {
+          throw firstErr;
+        }
+      }
+
       setCheckoutSession(session);
       setStep('checkout');
 
@@ -370,10 +397,17 @@ export const ListPropertyModal: React.FC<ListPropertyModalProps> = ({
       startPollingPaymentStatus(session.id);
     } catch (err: any) {
       console.error('SasPay Checkout creation error:', err);
-      const friendlyMessage =
-        err?.message && typeof err.message === 'string' && !err.message.includes('[object Object]')
-          ? err.message
-          : 'Impossible d’initialiser le paiement SasPay. Veuillez vérifier vos informations ou réessayer.';
+      let friendlyMessage =
+        'Impossible d’initialiser le paiement SasPay. Veuillez vérifier vos informations ou réessayer.';
+
+      const rawMsg = String(err?.message || '');
+      if (rawMsg.toLowerCase().includes('failed to fetch') || rawMsg.toLowerCase().includes('network')) {
+        friendlyMessage =
+          'Connexion au serveur de paiement interrompue. Veuillez vérifier votre accès Internet et cliquer sur "Réessayer".';
+      } else if (rawMsg.trim() && !rawMsg.includes('[object Object]')) {
+        friendlyMessage = rawMsg;
+      }
+
       setPaymentError(friendlyMessage);
     } finally {
       setIsCreatingCheckout(false);
@@ -627,9 +661,19 @@ export const ListPropertyModal: React.FC<ListPropertyModalProps> = ({
 
             {/* Error Message if any */}
             {paymentError && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
-                <span>{paymentError}</span>
+              <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center justify-between gap-3 animate-in fade-in">
+                <div className="flex items-center gap-2 min-w-0">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+                  <span className="leading-relaxed">{paymentError}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleInitiateSasPay}
+                  disabled={isCreatingCheckout}
+                  className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg shrink-0 cursor-pointer text-[11px] transition-colors"
+                >
+                  Réessayer
+                </button>
               </div>
             )}
 

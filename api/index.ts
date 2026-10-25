@@ -4,6 +4,21 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const app = express();
+
+// Full CORS headers for web, mobile, and preflight requests
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header(
+    'Access-Control-Allow-Headers',
+    'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Api-Version'
+  );
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
+
 app.use(express.json());
 
 const SASPAY_API_BASE = 'https://api.saspay.me/api/v1';
@@ -150,18 +165,46 @@ app.post('/api/saspay/create-checkout', async (req, res) => {
       payload.country = resolvedCountry;
     }
 
-    const response = await fetch(`${SASPAY_API_BASE}/checkout-sessions/`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${SASPAY_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
+    const sendSasPayRequest = async () => {
+      const resp = await fetch(`${SASPAY_API_BASE}/checkout-sessions/`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${SASPAY_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
 
-    const data = await response.json();
+      const text = await resp.text();
+      let parsed: any = null;
+      try {
+        parsed = JSON.parse(text);
+      } catch (_) {
+        parsed = null;
+      }
+      return { ok: resp.ok, status: resp.status, data: parsed, rawText: text };
+    };
 
-    if (!response.ok) {
+    let result = await sendSasPayRequest();
+
+    // Auto-retry once on 502/503/504 or network glitch from SasPay
+    if (!result.ok && (result.status >= 500 || !result.data)) {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      result = await sendSasPayRequest();
+    }
+
+    if (!result.data) {
+      return res.status(result.status || 502).json({
+        success: false,
+        error:
+          'La passerelle SasPay est momentanément indisponible (502). Veuillez réessayer dans un instant.',
+        details: result.rawText,
+      });
+    }
+
+    const data = result.data;
+
+    if (!result.ok || !data.success) {
       let errorMsg = 'Erreur lors de la création de la session SasPay';
       if (typeof data.message === 'string' && data.message.trim()) {
         errorMsg = data.message;
@@ -178,7 +221,7 @@ app.post('/api/saspay/create-checkout', async (req, res) => {
           if (parts.length > 0) errorMsg = parts.join(' | ');
         }
       }
-      return res.status(response.status).json({
+      return res.status(result.status || 400).json({
         success: false,
         error: errorMsg,
         details: data,
@@ -210,7 +253,21 @@ app.get('/api/saspay/check-status/:id', async (req, res) => {
       },
     });
 
-    const data = await response.json();
+    const text = await response.text();
+    let data: any = null;
+    try {
+      data = JSON.parse(text);
+    } catch (_) {
+      data = null;
+    }
+
+    if (!data) {
+      return res.status(response.status || 502).json({
+        success: false,
+        error: 'Statut SasPay temporairement indisponible',
+        details: text,
+      });
+    }
 
     if (!response.ok) {
       let errorMsg = 'Impossible de vérifier le statut de la session';

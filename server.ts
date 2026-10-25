@@ -17,6 +17,20 @@ async function startServer() {
   const app = express();
   const PORT = parseInt(process.env.PORT || '3000', 10);
 
+  // Full CORS headers
+  app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.header(
+      'Access-Control-Allow-Headers',
+      'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Api-Version'
+    );
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
+    }
+    next();
+  });
+
   app.use(express.json());
 
   // -------------------------------------------------------------
@@ -169,18 +183,46 @@ function resolveCountryIso(countryInput?: string): string | undefined {
         customer_email: payload.customer_email,
       });
 
-      const response = await fetch(`${SASPAY_API_BASE}/checkout-sessions/`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${SASPAY_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
+      const sendSasPayRequest = async () => {
+        const resp = await fetch(`${SASPAY_API_BASE}/checkout-sessions/`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${SASPAY_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
 
-      const data = await response.json();
+        const text = await resp.text();
+        let parsed: any = null;
+        try {
+          parsed = JSON.parse(text);
+        } catch (_) {
+          parsed = null;
+        }
+        return { ok: resp.ok, status: resp.status, data: parsed, rawText: text };
+      };
 
-      if (!response.ok) {
+      let result = await sendSasPayRequest();
+
+      // Retry once on 502/503/504
+      if (!result.ok && (result.status >= 500 || !result.data)) {
+        await new Promise((resolve) => setTimeout(resolve, 800));
+        result = await sendSasPayRequest();
+      }
+
+      if (!result.data) {
+        return res.status(result.status || 502).json({
+          success: false,
+          error:
+            'La passerelle SasPay est momentanément indisponible (502). Veuillez réessayer dans un instant.',
+          details: result.rawText,
+        });
+      }
+
+      const data = result.data;
+
+      if (!result.ok || !data.success) {
         console.error('[SasPay] Checkout creation failed:', data);
         let errorMsg = 'Erreur lors de la création de la session SasPay';
         if (typeof data.message === 'string' && data.message.trim()) {
@@ -188,13 +230,17 @@ function resolveCountryIso(countryInput?: string): string | undefined {
         } else if (typeof data.error === 'string' && data.error.trim()) {
           errorMsg = data.error;
         } else if (data.error && typeof data.error === 'object') {
-          const parts = Object.entries(data.error).map(([k, v]) => {
-            const valStr = Array.isArray(v) ? v.join(', ') : String(v);
-            return `${k}: ${valStr}`;
-          });
-          if (parts.length > 0) errorMsg = parts.join(' | ');
+          if (typeof data.error.detail === 'string' && data.error.detail.trim()) {
+            errorMsg = data.error.detail;
+          } else {
+            const parts = Object.entries(data.error).map(([k, v]) => {
+              const valStr = Array.isArray(v) ? v.join(', ') : String(v);
+              return `${k}: ${valStr}`;
+            });
+            if (parts.length > 0) errorMsg = parts.join(' | ');
+          }
         }
-        return res.status(response.status).json({
+        return res.status(result.status || 400).json({
           success: false,
           error: errorMsg,
           details: data,
@@ -229,7 +275,21 @@ function resolveCountryIso(countryInput?: string): string | undefined {
         },
       });
 
-      const data = await response.json();
+      const text = await response.text();
+      let data: any = null;
+      try {
+        data = JSON.parse(text);
+      } catch (_) {
+        data = null;
+      }
+
+      if (!data) {
+        return res.status(response.status || 502).json({
+          success: false,
+          error: 'Statut SasPay indisponible',
+          details: text,
+        });
+      }
 
       if (!response.ok) {
         let errorMsg = 'Impossible de vérifier le statut de la session';
@@ -237,12 +297,6 @@ function resolveCountryIso(countryInput?: string): string | undefined {
           errorMsg = data.message;
         } else if (typeof data.error === 'string' && data.error.trim()) {
           errorMsg = data.error;
-        } else if (data.error && typeof data.error === 'object') {
-          const parts = Object.entries(data.error).map(([k, v]) => {
-            const valStr = Array.isArray(v) ? v.join(', ') : String(v);
-            return `${k}: ${valStr}`;
-          });
-          if (parts.length > 0) errorMsg = parts.join(' | ');
         }
         return res.status(response.status).json({
           success: false,
