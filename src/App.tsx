@@ -576,6 +576,8 @@ export default function App() {
         isOpen={isValuationOpen}
         onClose={() => setIsValuationOpen(false)}
         t={t.modals.valuation}
+        lang={lang}
+        defaultCountry={filters.country !== 'all' ? filters.country : undefined}
       />
 
       <ListPropertyModal

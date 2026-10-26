@@ -498,15 +498,30 @@ export interface Translations {
     valuation: {
       title: string;
       subtitle: string;
+      countryLabel: string;
+      selectCountry: string;
+      currencyLabel: string;
+      cityLabel: string;
+      cityPlaceholder: string;
       addressLabel: string;
       addressPlaceholder: string;
       typeLabel: string;
       bedsLabel: string;
       bathsLabel: string;
+      surfaceLabel: string;
+      surfaceUnitM2: string;
+      surfaceUnitSqft: string;
+      standingLabel: string;
+      standingStandard: string;
+      standingRenovated: string;
+      standingLuxury: string;
       sqftLabel: string;
       landPlot: string;
       calculateBtn: string;
+      recalculateBtn: string;
       estimatedTitle: string;
+      estimatedRangeTitle: string;
+      pricePerUnitTitle: string;
       marketTrend: string;
       disclaimer: string;
       sendDossierTitle: string;
@@ -753,25 +768,40 @@ export const translations: Record<Language, Translations> = {
       },
       valuation: {
         title: 'Estimation immobilière gratuite',
-        subtitle: 'Découvrez la valeur vénale actuelle de votre propriété sur le marché.',
-        addressLabel: 'Adresse postale du bien *',
-        addressPlaceholder: 'Ex: 123 Maple Drive, Beverly Hills, CA',
+        subtitle: 'Découvrez la valeur vénale actuelle de votre propriété selon votre pays et région.',
+        countryLabel: 'Pays / Région du bien *',
+        selectCountry: 'Sélectionnez le pays',
+        currencyLabel: 'Devise monétaire *',
+        cityLabel: 'Ville / Commune ou Quartier',
+        cityPlaceholder: 'Ex: Brazzaville, Douala, Paris, Abidjan...',
+        addressLabel: 'Adresse ou repère du bien',
+        addressPlaceholder: 'Ex: 102 Rue Metala, Boulevard de la Liberté...',
         typeLabel: 'Type de bien',
         bedsLabel: 'Chambres',
         bathsLabel: 'Bains',
-        sqftLabel: 'Surface habitable ou superficie terrain (Sq Ft)',
+        surfaceLabel: 'Superficie / Surface',
+        surfaceUnitM2: 'm² (Mètres carrés)',
+        surfaceUnitSqft: 'sq ft (Pieds carrés)',
+        standingLabel: 'État & Standing',
+        standingStandard: 'Standard / Bon état',
+        standingRenovated: 'Rénové / Construction récente',
+        standingLuxury: 'Haut standing / Prestige',
+        sqftLabel: 'Surface (m² ou sq ft)',
         landPlot: 'Terrain / Parcelle',
         calculateBtn: 'Calculer l’estimation instantanée',
+        recalculateBtn: 'Ajuster l’estimation',
         estimatedTitle: 'Valeur indicative estimée :',
+        estimatedRangeTitle: 'Fourchette estimée du marché :',
+        pricePerUnitTitle: 'Prix moyen estimé :',
         marketTrend: '+12,5% tendance marché',
-        disclaimer: '* Note : Estimation indicative. Une expertise certifiée nécessite une visite physique approfondie des lieux.',
+        disclaimer: '* Note : Estimation indicative calculée selon les barèmes moyens du marché et de la devise locale. Une expertise certifiée nécessite une visite physique approfondie des lieux.',
         sendDossierTitle: 'Recevoir le dossier d’évaluation complet',
-        namePlaceholder: 'Votre nom',
+        namePlaceholder: 'Votre nom complet',
         emailPlaceholder: 'Adresse email',
-        phonePlaceholder: 'Téléphone',
+        phonePlaceholder: 'Numéro de téléphone',
         submitBtn: 'Envoyer mon rapport d’évaluation',
         successTitle: 'Demande d’évaluation transmise !',
-        successDesc: 'Notre conseiller expert en valorisation immobilière prépare votre étude comparative détaillée.',
+        successDesc: 'Notre conseiller expert prépare votre étude comparative détaillée.',
         closeBtn: 'Fermer',
       },
       listProperty: {
@@ -1006,26 +1036,41 @@ export const translations: Record<Language, Translations> = {
         deleteListingSuccess: 'Your listing has been successfully deleted.',
       },
       valuation: {
-        title: 'Free Home Valuation Estimate',
-        subtitle: 'Discover the current real-time market worth of your home or land.',
-        addressLabel: 'Property Street Address *',
-        addressPlaceholder: 'e.g. 123 Maple Drive, Beverly Hills, CA',
+        title: 'Free Property Valuation Estimate',
+        subtitle: 'Discover the real-time market value of your property based on your country and region.',
+        countryLabel: 'Property Country / Region *',
+        selectCountry: 'Select a country',
+        currencyLabel: 'Currency *',
+        cityLabel: 'City / District or Area',
+        cityPlaceholder: 'e.g. Brazzaville, London, Paris, New York, Dubai...',
+        addressLabel: 'Street Address or Landmark',
+        addressPlaceholder: 'e.g. 102 Rue Metala, 123 Maple Drive...',
         typeLabel: 'Property Type',
         bedsLabel: 'Beds',
         bathsLabel: 'Baths',
-        sqftLabel: 'Living Area or Lot Size (Sq Ft)',
+        surfaceLabel: 'Surface Area / Lot Size',
+        surfaceUnitM2: 'm² (Square Meters)',
+        surfaceUnitSqft: 'sq ft (Square Feet)',
+        standingLabel: 'Condition & Standard',
+        standingStandard: 'Standard / Good Condition',
+        standingRenovated: 'Renovated / Recent Construction',
+        standingLuxury: 'High-end Luxury / Prestigious',
+        sqftLabel: 'Surface (m² or sq ft)',
         landPlot: 'Land / Plot',
         calculateBtn: 'Calculate Instant Valuation Estimate',
-        estimatedTitle: 'Estimated Illustrative Market Value:',
+        recalculateBtn: 'Adjust Valuation Parameters',
+        estimatedTitle: 'Estimated Market Value:',
+        estimatedRangeTitle: 'Estimated Market Price Range:',
+        pricePerUnitTitle: 'Estimated Average Price:',
         marketTrend: '+12.5% market trend',
-        disclaimer: '* Note: Illustrative estimate for planning purposes. Official certified appraisals require full on-site physical inspection.',
-        sendDossierTitle: 'Send My Full Certified Valuation Dossier',
-        namePlaceholder: 'Your Name',
+        disclaimer: '* Note: Illustrative estimate based on average regional market price metrics and selected currency. Official certified appraisals require full physical on-site inspection.',
+        sendDossierTitle: 'Send My Complete Valuation Dossier',
+        namePlaceholder: 'Your Full Name',
         emailPlaceholder: 'Email Address',
-        phonePlaceholder: 'Phone',
+        phonePlaceholder: 'Phone Number',
         submitBtn: 'Send Me Complete Property Valuation',
         successTitle: 'Valuation Report Requested!',
-        successDesc: 'Our senior listing specialist will prepare your complete comprehensive market comparative report.',
+        successDesc: 'Our senior valuation specialist will prepare your complete comprehensive comparative report.',
         closeBtn: 'Done',
       },
       listProperty: {
