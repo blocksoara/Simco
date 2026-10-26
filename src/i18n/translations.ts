@@ -597,7 +597,7 @@ export const translations: Record<Language, Translations> = {
     nav: {
       home: 'Accueil',
       buy: 'À Vendre',
-      sell: 'Vendre / Estimer',
+      sell: 'Estimer un bien',
       rent: 'À Louer',
       listings: 'Annonces',
       aboutUs: 'À Propos',
@@ -625,7 +625,7 @@ export const translations: Record<Language, Translations> = {
     search: {
       buy: 'À Vendre',
       rent: 'À Louer',
-      sell: 'Vendre / Estimer',
+      sell: 'Estimer un bien',
       countryLabel: 'Pays',
       allCountries: 'Monde entier (Tous pays)',
       locationLabel: 'Ville / Quartier',
@@ -851,7 +851,7 @@ export const translations: Record<Language, Translations> = {
     nav: {
       home: 'Home',
       buy: 'For Sale',
-      sell: 'Sell / Value',
+      sell: 'Property Valuation',
       rent: 'For Rent',
       listings: 'Listings',
       aboutUs: 'About Us',
@@ -879,7 +879,7 @@ export const translations: Record<Language, Translations> = {
     search: {
       buy: 'For Sale',
       rent: 'For Rent',
-      sell: 'Sell / Value',
+      sell: 'Property Valuation',
       countryLabel: 'Country',
       allCountries: 'Worldwide (All Countries)',
       locationLabel: 'City / Neighborhood',

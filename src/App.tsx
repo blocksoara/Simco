@@ -487,6 +487,7 @@ export default function App() {
           setIsAllPropertiesOpen(true);
         }}
         onOpenMyListings={handleOpenMyListings}
+        onOpenValuation={() => setIsValuationOpen(true)}
         lang={lang}
         setLang={setLang}
         t={t.nav}

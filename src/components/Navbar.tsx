@@ -11,6 +11,7 @@ interface NavbarProps {
   onOpenAuth: () => void;
   onOpenFavorites?: () => void;
   onOpenMyListings?: () => void;
+  onOpenValuation?: () => void;
   lang: Language;
   setLang: (lang: Language) => void;
   t: Translations['nav'];
@@ -24,6 +25,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenAuth,
   onOpenFavorites,
   onOpenMyListings,
+  onOpenValuation,
   lang,
   setLang,
   t,
@@ -35,10 +37,16 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
   const handleNavClick = (tabKey: 'home' | 'buy' | 'sell' | 'rent' | 'listings' | 'aboutUs' | 'blog' | 'contact') => {
-    setActiveTab(tabKey);
     setMobileMenuOpen(false);
 
-    if ((tabKey === 'buy' || tabKey === 'sell') && onFilterStatus) {
+    if (tabKey === 'sell') {
+      onOpenValuation?.();
+      return;
+    }
+
+    setActiveTab(tabKey);
+
+    if (tabKey === 'buy' && onFilterStatus) {
       onFilterStatus('FOR SALE');
       const el = document.getElementById('featured-properties');
       el?.scrollIntoView({ behavior: 'smooth' });
