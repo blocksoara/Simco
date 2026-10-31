@@ -128,9 +128,9 @@ app.get('/api/saspay/pricing-fees', (req, res) => {
 });
 
 /**
- * POST /api/saspay/create-checkout and /api/payment/create-listing-order
+ * POST /api/saspay/create-checkout, /api/payment/create-listing-order, /api/publications/submit
  */
-app.post(['/api/saspay/create-checkout', '/api/payment/create-listing-order'], async (req, res) => {
+app.post(['/api/saspay/create-checkout', '/api/payment/create-listing-order', '/api/publications/submit'], async (req, res) => {
   try {
     const {
       amount,

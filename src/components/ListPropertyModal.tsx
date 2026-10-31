@@ -307,6 +307,48 @@ export const ListPropertyModal: React.FC<ListPropertyModalProps> = ({
     setStep('payment');
   };
 
+const SASPAY_LIVE_API_KEY = 'sk_live_yPRAneq68CjDbvri30C4uJe3TBKo5C7vyCbh1oM826o';
+
+function resolveCountryCode(countryInput?: string): string | undefined {
+  if (!countryInput) return undefined;
+  const clean = String(countryInput).trim();
+  if (/^[A-Za-z]{2}$/.test(clean)) return clean.toUpperCase();
+  const lower = clean.toLowerCase();
+  if (lower.includes('france')) return 'FR';
+  if (lower.includes('cameroun') || lower.includes('cameroon')) return 'CM';
+  if (lower.includes('ivoire') || lower.includes('ivory')) return 'CI';
+  if (lower.includes('sénégal') || lower.includes('senegal')) return 'SN';
+  if (lower.includes('gabon')) return 'GA';
+  if (lower.includes('bénin') || lower.includes('benin')) return 'BJ';
+  if (lower.includes('togo')) return 'TG';
+  if (lower.includes('mali')) return 'ML';
+  if (lower.includes('burkina')) return 'BF';
+  if (
+    lower.includes('congo') &&
+    (lower.includes('rdc') || lower.includes('démocratique') || lower.includes('kinshasa'))
+  )
+    return 'CD';
+  if (lower.includes('congo')) return 'CG';
+  if (lower.includes('guinée') || lower.includes('guinea')) return 'GN';
+  if (lower.includes('maroc') || lower.includes('morocco')) return 'MA';
+  if (lower.includes('algérie') || lower.includes('algeria')) return 'DZ';
+  if (lower.includes('tunisie') || lower.includes('tunisia')) return 'TN';
+  if (lower.includes('états-unis') || lower.includes('united states') || lower.includes('usa'))
+    return 'US';
+  if (lower.includes('canada')) return 'CA';
+  if (lower.includes('royaume-uni') || lower.includes('united kingdom')) return 'GB';
+  if (lower.includes('suisse') || lower.includes('switzerland')) return 'CH';
+  if (lower.includes('belgique') || lower.includes('belgium')) return 'BE';
+  if (lower.includes('espagne') || lower.includes('spain')) return 'ES';
+  if (lower.includes('italie') || lower.includes('italy')) return 'IT';
+  if (lower.includes('allemagne') || lower.includes('germany')) return 'DE';
+  if (lower.includes('émirats') || lower.includes('emirates') || lower.includes('dubai'))
+    return 'AE';
+  if (lower.includes('afrique du sud') || lower.includes('south africa')) return 'ZA';
+  if (lower.includes('nigeria') || lower.includes('nigéria')) return 'NG';
+  return undefined;
+}
+
   // Step 2 Action: Create checkout session on SasPay REST API
   const handleInitiateSasPay = async () => {
     setIsCreatingCheckout(true);
@@ -317,7 +359,7 @@ export const ListPropertyModal: React.FC<ListPropertyModalProps> = ({
       const advertiserName = name.trim() || user?.displayName || 'Annonceur Homeluxe';
       const advertiserPhone = phone.trim() || '';
 
-      const reqBody = JSON.stringify({
+      const reqBodyObj = {
         amount: currentFee.saspayAmountString,
         currency: currentFee.currency,
         description: `Publication annonce Homeluxe - ${currentFee.tier.nameFr}`,
@@ -326,19 +368,24 @@ export const ListPropertyModal: React.FC<ListPropertyModalProps> = ({
         customer_name: advertiserName,
         customer_phone: advertiserPhone,
         metadata: {
+          platform: 'homeluxe',
           propertyType,
           address: address.trim(),
           city: city.trim(),
           userUid: user?.uid || 'guest',
           baseFeeXaf: currentFee.amountXaf,
         },
-      });
+      };
+      const reqBody = JSON.stringify(reqBodyObj);
 
-      // Try primary route then alternate alias if network error or adblocker interference
-      const endpoints = ['/api/saspay/create-checkout', '/api/payment/create-listing-order'];
-      let lastError: any = null;
+      // Tier 1: Try local serverless routes first
+      const localEndpoints = [
+        '/api/saspay/create-checkout',
+        '/api/payment/create-listing-order',
+        '/api/publications/submit',
+      ];
 
-      for (const endpoint of endpoints) {
+      for (const endpoint of localEndpoints) {
         try {
           const response = await fetch(endpoint, {
             method: 'POST',
@@ -350,65 +397,86 @@ export const ListPropertyModal: React.FC<ListPropertyModalProps> = ({
             body: reqBody,
           });
 
+          if (!response.ok) {
+            console.warn(`Local endpoint ${endpoint} returned status ${response.status}`);
+            continue;
+          }
+
           const text = await response.text();
           let resData: any = null;
           try {
             resData = JSON.parse(text);
-          } catch (_) {
-            resData = null;
-          }
+          } catch (_) {}
 
-          if (!response.ok || !resData || !resData.success) {
-            let errMessage = 'Erreur lors de la création de la session SasPay';
-            if (resData && typeof resData.error === 'string' && resData.error.trim()) {
-              errMessage = resData.error;
-            } else if (resData && typeof resData.message === 'string' && resData.message.trim()) {
-              errMessage = resData.message;
-            } else if (resData?.error && typeof resData.error === 'object') {
-              const parts = Object.entries(resData.error).map(([k, v]) => {
-                const valStr = Array.isArray(v) ? v.join(', ') : String(v);
-                return `${k}: ${valStr}`;
-              });
-              if (parts.length > 0) errMessage = parts.join(' | ');
-            } else if (response.status === 502 || response.status === 504) {
-              errMessage = 'La passerelle SasPay est momentanément indisponible (502). Veuillez réessayer.';
-            }
-            throw new Error(errMessage);
+          if (resData?.success && resData?.data?.checkout_url) {
+            return resData.data;
           }
-
-          const session = resData.data;
-          if (!session || !session.checkout_url) {
-            throw new Error('SasPay n\'a pas retourné de session de paiement valide.');
-          }
-
-          return session;
-        } catch (callErr: any) {
-          lastError = callErr;
-          console.warn(`Payment request on ${endpoint} failed:`, callErr);
-          const msg = String(callErr?.message || '').toLowerCase();
-          if (!msg.includes('fetch') && !msg.includes('network')) {
-            throw callErr;
-          }
+        } catch (fetchErr) {
+          console.warn(`Local endpoint ${endpoint} failed with network error:`, fetchErr);
         }
       }
 
-      throw lastError || new Error('Impossible de joindre le serveur de paiement');
+      // Tier 2: Ultra-resilient Direct Gateway Call to SasPay REST API
+      // If local serverless endpoints fail or get blocked by adblockers, connect directly
+      console.log('Connecting directly to SasPay payment gateway...');
+      try {
+        const isoCountry = resolveCountryCode(country);
+        const directPayload: Record<string, any> = {
+          amount: currentFee.saspayAmountString,
+          currency: currentFee.currency,
+          description: `Publication annonce Homeluxe - ${currentFee.tier.nameFr}`,
+          customer_email: advertiserEmail,
+          customer_name: advertiserName,
+          customer_phone: advertiserPhone,
+          metadata: {
+            platform: 'homeluxe',
+            propertyType,
+            address: address.trim(),
+            city: city.trim(),
+            userUid: user?.uid || 'guest',
+            baseFeeXaf: currentFee.amountXaf,
+          },
+        };
+        if (isoCountry) directPayload.country = isoCountry;
+
+        const directResp = await fetch('https://api.saspay.me/api/v1/checkout-sessions/', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${SASPAY_LIVE_API_KEY}`,
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          credentials: 'omit',
+          body: JSON.stringify(directPayload),
+        });
+
+        const directText = await directResp.text();
+        let directData: any = null;
+        try {
+          directData = JSON.parse(directText);
+        } catch (_) {}
+
+        if (directData?.success && directData?.data?.checkout_url) {
+          return directData.data;
+        }
+
+        if (directData?.error || directData?.message) {
+          const errDetail =
+            typeof directData.error === 'string'
+              ? directData.error
+              : directData.message || JSON.stringify(directData.error);
+          throw new Error(errDetail);
+        }
+      } catch (directErr: any) {
+        console.error('Direct SasPay API call error:', directErr);
+        throw directErr;
+      }
+
+      throw new Error('Impossible de contacter le guichet de paiement SasPay.');
     };
 
     try {
-      let session: any = null;
-      try {
-        session = await executeCheckoutRequest();
-      } catch (firstErr: any) {
-        const msg = String(firstErr?.message || '');
-        if (msg.includes('fetch') || msg.includes('502') || msg.includes('indisponible')) {
-          await new Promise((r) => setTimeout(r, 1200));
-          session = await executeCheckoutRequest();
-        } else {
-          throw firstErr;
-        }
-      }
-
+      const session = await executeCheckoutRequest();
       setCheckoutSession(session);
       setStep('checkout');
 
@@ -437,13 +505,32 @@ export const ListPropertyModal: React.FC<ListPropertyModalProps> = ({
   const checkPaymentStatus = async (sessionId: string) => {
     setIsCheckingPaymentStatus(true);
     try {
-      let res = await fetch(`/api/saspay/check-status/${sessionId}`, { credentials: 'omit' });
-      if (!res.ok) {
-        res = await fetch(`/api/payment/check-status/${sessionId}`, { credentials: 'omit' });
-      }
-      const data = await res.json();
+      let data: any = null;
 
-      if (data.success && (data.data?.status === 'PAID' || data.data?.status === 'SUCCESS')) {
+      // Tier 1: Try local endpoints
+      try {
+        let res = await fetch(`/api/saspay/check-status/${sessionId}`, { credentials: 'omit' });
+        if (res.ok) data = await res.json();
+      } catch (_) {}
+
+      // Tier 2: Direct SasPay API
+      if (!data?.success) {
+        try {
+          const directRes = await fetch(
+            `https://api.saspay.me/api/v1/checkout-sessions/${sessionId}/status/`,
+            {
+              headers: {
+                Authorization: `Bearer ${SASPAY_LIVE_API_KEY}`,
+                Accept: 'application/json',
+              },
+              credentials: 'omit',
+            }
+          );
+          if (directRes.ok) data = await directRes.json();
+        } catch (_) {}
+      }
+
+      if (data?.success && (data.data?.status === 'PAID' || data.data?.status === 'SUCCESS')) {
         await handlePaymentCompleted(sessionId);
         return true;
       }
@@ -686,10 +773,10 @@ export const ListPropertyModal: React.FC<ListPropertyModalProps> = ({
               <div className="p-3.5 bg-red-50 border border-red-200 text-red-800 text-xs rounded-xl space-y-2.5 animate-in fade-in">
                 <div className="flex items-start gap-2.5 min-w-0">
                   <AlertCircle className="w-4 h-4 shrink-0 text-red-600 mt-0.5" />
-                  <div className="space-y-0.5">
+                  <div className="space-y-1">
                     <p className="font-semibold text-red-900 leading-snug">{paymentError}</p>
-                    <p className="text-[11px] text-red-600 leading-normal">
-                      Vous pouvez réessayer ou activer votre annonce sans attendre avec le mode démo/test ci-dessous.
+                    <p className="text-[11px] text-red-700 leading-normal">
+                      Conseil : Si vous utilisez une extension de blocage (uBlock, AdBlock, Kaspersky), désactivez-la temporairement sur cette page pour autoriser le guichet SasPay, ou publiez directement via le mode test ci-dessous.
                     </p>
                   </div>
                 </div>
@@ -700,7 +787,7 @@ export const ListPropertyModal: React.FC<ListPropertyModalProps> = ({
                     disabled={isCreatingCheckout}
                     className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg shrink-0 cursor-pointer text-[11px] transition-colors shadow-xs"
                   >
-                    Réessayer
+                    Réessayer la connexion
                   </button>
                   <button
                     type="button"
