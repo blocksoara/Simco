@@ -5,13 +5,20 @@ dotenv.config();
 
 const app = express();
 
-// Full CORS headers for web, mobile, and preflight requests
+// Dynamic CORS headers for web, mobile, Vercel, and preflight requests
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  if (origin) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Vary', 'Origin');
+    res.header('Access-Control-Allow-Credentials', 'true');
+  } else {
+    res.header('Access-Control-Allow-Origin', '*');
+  }
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.header(
     'Access-Control-Allow-Headers',
-    'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Api-Version'
+    'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Api-Version, X-CSRF-Token'
   );
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -121,9 +128,9 @@ app.get('/api/saspay/pricing-fees', (req, res) => {
 });
 
 /**
- * POST /api/saspay/create-checkout
+ * POST /api/saspay/create-checkout and /api/payment/create-listing-order
  */
-app.post('/api/saspay/create-checkout', async (req, res) => {
+app.post(['/api/saspay/create-checkout', '/api/payment/create-listing-order'], async (req, res) => {
   try {
     const {
       amount,
@@ -238,9 +245,9 @@ app.post('/api/saspay/create-checkout', async (req, res) => {
 });
 
 /**
- * GET /api/saspay/check-status/:id
+ * GET /api/saspay/check-status/:id and /api/payment/check-status/:id
  */
-app.get('/api/saspay/check-status/:id', async (req, res) => {
+app.get(['/api/saspay/check-status/:id', '/api/payment/check-status/:id'], async (req, res) => {
   try {
     const sessionId = req.params.id;
     if (!sessionId) {

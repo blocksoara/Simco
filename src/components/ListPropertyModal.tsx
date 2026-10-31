@@ -317,62 +317,82 @@ export const ListPropertyModal: React.FC<ListPropertyModalProps> = ({
       const advertiserName = name.trim() || user?.displayName || 'Annonceur Homeluxe';
       const advertiserPhone = phone.trim() || '';
 
-      const response = await fetch('/api/saspay/create-checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
+      const reqBody = JSON.stringify({
+        amount: currentFee.saspayAmountString,
+        currency: currentFee.currency,
+        description: `Publication annonce Homeluxe - ${currentFee.tier.nameFr}`,
+        country: country,
+        customer_email: advertiserEmail,
+        customer_name: advertiserName,
+        customer_phone: advertiserPhone,
+        metadata: {
+          propertyType,
+          address: address.trim(),
+          city: city.trim(),
+          userUid: user?.uid || 'guest',
+          baseFeeXaf: currentFee.amountXaf,
         },
-        body: JSON.stringify({
-          amount: currentFee.saspayAmountString,
-          currency: currentFee.currency,
-          description: `Publication annonce Homeluxe - ${currentFee.tier.nameFr}`,
-          country: country,
-          customer_email: advertiserEmail,
-          customer_name: advertiserName,
-          customer_phone: advertiserPhone,
-          metadata: {
-            propertyType,
-            address: address.trim(),
-            city: city.trim(),
-            userUid: user?.uid || 'guest',
-            baseFeeXaf: currentFee.amountXaf,
-          },
-        }),
       });
 
-      const text = await response.text();
-      let resData: any = null;
-      try {
-        resData = JSON.parse(text);
-      } catch (_) {
-        resData = null;
-      }
+      // Try primary route then alternate alias if network error or adblocker interference
+      const endpoints = ['/api/saspay/create-checkout', '/api/payment/create-listing-order'];
+      let lastError: any = null;
 
-      if (!response.ok || !resData || !resData.success) {
-        let errMessage = 'Erreur lors de la création de la session SasPay';
-        if (resData && typeof resData.error === 'string' && resData.error.trim()) {
-          errMessage = resData.error;
-        } else if (resData && typeof resData.message === 'string' && resData.message.trim()) {
-          errMessage = resData.message;
-        } else if (resData?.error && typeof resData.error === 'object') {
-          const parts = Object.entries(resData.error).map(([k, v]) => {
-            const valStr = Array.isArray(v) ? v.join(', ') : String(v);
-            return `${k}: ${valStr}`;
+      for (const endpoint of endpoints) {
+        try {
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+            },
+            credentials: 'omit',
+            body: reqBody,
           });
-          if (parts.length > 0) errMessage = parts.join(' | ');
-        } else if (response.status === 502 || response.status === 504) {
-          errMessage = 'La passerelle SasPay est momentanément indisponible (502). Veuillez réessayer.';
+
+          const text = await response.text();
+          let resData: any = null;
+          try {
+            resData = JSON.parse(text);
+          } catch (_) {
+            resData = null;
+          }
+
+          if (!response.ok || !resData || !resData.success) {
+            let errMessage = 'Erreur lors de la création de la session SasPay';
+            if (resData && typeof resData.error === 'string' && resData.error.trim()) {
+              errMessage = resData.error;
+            } else if (resData && typeof resData.message === 'string' && resData.message.trim()) {
+              errMessage = resData.message;
+            } else if (resData?.error && typeof resData.error === 'object') {
+              const parts = Object.entries(resData.error).map(([k, v]) => {
+                const valStr = Array.isArray(v) ? v.join(', ') : String(v);
+                return `${k}: ${valStr}`;
+              });
+              if (parts.length > 0) errMessage = parts.join(' | ');
+            } else if (response.status === 502 || response.status === 504) {
+              errMessage = 'La passerelle SasPay est momentanément indisponible (502). Veuillez réessayer.';
+            }
+            throw new Error(errMessage);
+          }
+
+          const session = resData.data;
+          if (!session || !session.checkout_url) {
+            throw new Error('SasPay n\'a pas retourné de session de paiement valide.');
+          }
+
+          return session;
+        } catch (callErr: any) {
+          lastError = callErr;
+          console.warn(`Payment request on ${endpoint} failed:`, callErr);
+          const msg = String(callErr?.message || '').toLowerCase();
+          if (!msg.includes('fetch') && !msg.includes('network')) {
+            throw callErr;
+          }
         }
-        throw new Error(errMessage);
       }
 
-      const session = resData.data;
-      if (!session || !session.checkout_url) {
-        throw new Error('SasPay n\'a pas retourné de session de paiement valide.');
-      }
-
-      return session;
+      throw lastError || new Error('Impossible de joindre le serveur de paiement');
     };
 
     try {
@@ -380,7 +400,6 @@ export const ListPropertyModal: React.FC<ListPropertyModalProps> = ({
       try {
         session = await executeCheckoutRequest();
       } catch (firstErr: any) {
-        // If network hiccup or temporary 502, automatically retry once
         const msg = String(firstErr?.message || '');
         if (msg.includes('fetch') || msg.includes('502') || msg.includes('indisponible')) {
           await new Promise((r) => setTimeout(r, 1200));
@@ -398,7 +417,7 @@ export const ListPropertyModal: React.FC<ListPropertyModalProps> = ({
     } catch (err: any) {
       console.error('SasPay Checkout creation error:', err);
       let friendlyMessage =
-        'Impossible d’initialiser le paiement SasPay. Veuillez vérifier vos informations ou réessayer.';
+        'Impossible d’initialiser le paiement SasPay. Veuillez vérifier votre connexion ou réessayer.';
 
       const rawMsg = String(err?.message || '');
       if (rawMsg.toLowerCase().includes('failed to fetch') || rawMsg.toLowerCase().includes('network')) {
@@ -418,7 +437,10 @@ export const ListPropertyModal: React.FC<ListPropertyModalProps> = ({
   const checkPaymentStatus = async (sessionId: string) => {
     setIsCheckingPaymentStatus(true);
     try {
-      const res = await fetch(`/api/saspay/check-status/${sessionId}`);
+      let res = await fetch(`/api/saspay/check-status/${sessionId}`, { credentials: 'omit' });
+      if (!res.ok) {
+        res = await fetch(`/api/payment/check-status/${sessionId}`, { credentials: 'omit' });
+      }
       const data = await res.json();
 
       if (data.success && (data.data?.status === 'PAID' || data.data?.status === 'SUCCESS')) {
@@ -661,19 +683,33 @@ export const ListPropertyModal: React.FC<ListPropertyModalProps> = ({
 
             {/* Error Message if any */}
             {paymentError && (
-              <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center justify-between gap-3 animate-in fade-in">
-                <div className="flex items-center gap-2 min-w-0">
-                  <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
-                  <span className="leading-relaxed">{paymentError}</span>
+              <div className="p-3.5 bg-red-50 border border-red-200 text-red-800 text-xs rounded-xl space-y-2.5 animate-in fade-in">
+                <div className="flex items-start gap-2.5 min-w-0">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-red-600 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <p className="font-semibold text-red-900 leading-snug">{paymentError}</p>
+                    <p className="text-[11px] text-red-600 leading-normal">
+                      Vous pouvez réessayer ou activer votre annonce sans attendre avec le mode démo/test ci-dessous.
+                    </p>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleInitiateSasPay}
-                  disabled={isCreatingCheckout}
-                  className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg shrink-0 cursor-pointer text-[11px] transition-colors"
-                >
-                  Réessayer
-                </button>
+                <div className="flex items-center gap-2 pt-1 border-t border-red-200/60">
+                  <button
+                    type="button"
+                    onClick={handleInitiateSasPay}
+                    disabled={isCreatingCheckout}
+                    className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg shrink-0 cursor-pointer text-[11px] transition-colors shadow-xs"
+                  >
+                    Réessayer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSimulatePayment}
+                    className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg shrink-0 cursor-pointer text-[11px] transition-colors shadow-xs"
+                  >
+                    Publier en Mode Test / Démo (Gratuit)
+                  </button>
+                </div>
               </div>
             )}
 
