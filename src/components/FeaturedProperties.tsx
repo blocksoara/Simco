@@ -31,12 +31,18 @@ export const FeaturedProperties: React.FC<FeaturedPropertiesProps> = ({
 }) => {
   const [startIndex, setStartIndex] = useState(0);
 
+  React.useEffect(() => {
+    setStartIndex(0);
+  }, [properties.length]);
+
   // If there are more than 4 properties, allow cycling
   const canSlideNext = properties.length > 4;
   const handleNext = () => {
+    if (!canSlideNext) return;
     setStartIndex((prev) => (prev + 1) % properties.length);
   };
   const handlePrev = () => {
+    if (!canSlideNext) return;
     setStartIndex((prev) => (prev - 1 + properties.length) % properties.length);
   };
 
@@ -89,9 +95,9 @@ export const FeaturedProperties: React.FC<FeaturedPropertiesProps> = ({
       ) : (
         <div className="relative">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {visibleProperties.map((prop, idx) => (
+            {visibleProperties.map((prop) => (
               <PropertyCard
-                key={`${prop.id}-${idx}`}
+                key={prop.id}
                 property={prop}
                 isFavorite={favorites.has(prop.id)}
                 onToggleFavorite={onToggleFavorite}
@@ -105,15 +111,17 @@ export const FeaturedProperties: React.FC<FeaturedPropertiesProps> = ({
           </div>
 
           {/* Carousel Next Arrow overlay on the right edge */}
-          <div className="hidden lg:block absolute -right-3.5 top-1/2 -translate-y-1/2 z-20">
-            <button
-              onClick={handleNext}
-              className="w-8 h-8 rounded-full bg-white border border-slate-200 shadow-md flex items-center justify-center text-slate-700 hover:text-[#082653] hover:scale-105 transition-all cursor-pointer"
-              aria-label="Next property"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
+          {canSlideNext && (
+            <div className="hidden lg:block absolute -right-3.5 top-1/2 -translate-y-1/2 z-20">
+              <button
+                onClick={handleNext}
+                className="w-8 h-8 rounded-full bg-white border border-slate-200 shadow-md flex items-center justify-center text-slate-700 hover:text-[#082653] hover:scale-105 transition-all cursor-pointer"
+                aria-label="Next property"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
 
           {canSlideNext && (
             <div className="hidden lg:block absolute -left-3.5 top-1/2 -translate-y-1/2 z-20">

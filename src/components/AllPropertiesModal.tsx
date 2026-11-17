@@ -78,11 +78,17 @@ export const AllPropertiesModal: React.FC<AllPropertiesModalProps> = ({
     }
 
     // Country Filter
+    const propCountry = (p.country || '').toLowerCase();
+    const propLocation = (p.location || '').toLowerCase();
+    const propType = (p.type || '').toLowerCase();
+    const propAddress = (p.address || '').toLowerCase();
+    const propCity = (p.city || '').toLowerCase();
+
     if (selectedCountry !== 'all') {
       const matchCountry =
-        p.country.toLowerCase() === selectedCountry.toLowerCase() ||
-        (selectedCountry === 'France' && (p.location.includes('France') || p.country === 'France')) ||
-        (selectedCountry === 'États-Unis' && (p.location.includes('United States') || p.country === 'United States' || p.country === 'États-Unis')) ||
+        propCountry === selectedCountry.toLowerCase() ||
+        (selectedCountry === 'France' && (propLocation.includes('france') || p.country === 'France')) ||
+        (selectedCountry === 'États-Unis' && (propLocation.includes('united states') || p.country === 'United States' || p.country === 'États-Unis')) ||
         (selectedCountry === 'United States' && (p.country === 'United States' || p.country === 'États-Unis'));
       if (!matchCountry) return false;
     }
@@ -93,10 +99,10 @@ export const AllPropertiesModal: React.FC<AllPropertiesModalProps> = ({
         const isLand =
           p.type === 'Land / Plot' ||
           p.type === 'Terrain / Parcelle' ||
-          p.type.toLowerCase().includes('terrain') ||
-          p.type.toLowerCase().includes('parcelle') ||
-          p.type.toLowerCase().includes('land') ||
-          p.type.toLowerCase().includes('plot');
+          propType.includes('terrain') ||
+          propType.includes('parcelle') ||
+          propType.includes('land') ||
+          propType.includes('plot');
         if (!isLand) return false;
       } else if (p.type !== selectedPropertyType) {
         return false;
@@ -107,11 +113,11 @@ export const AllPropertiesModal: React.FC<AllPropertiesModalProps> = ({
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       const match =
-        p.address.toLowerCase().includes(q) ||
-        p.location.toLowerCase().includes(q) ||
-        p.city.toLowerCase().includes(q) ||
-        p.country.toLowerCase().includes(q) ||
-        p.type.toLowerCase().includes(q);
+        propAddress.includes(q) ||
+        propLocation.includes(q) ||
+        propCity.includes(q) ||
+        propCountry.includes(q) ||
+        propType.includes(q);
       if (!match) return false;
     }
 

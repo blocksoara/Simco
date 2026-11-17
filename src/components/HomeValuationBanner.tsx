@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowRight, Home, TrendingUp } from 'lucide-react';
 import { Translations } from '../i18n/translations.ts';
-import valuationLivingRoomImg from '../assets/images/valuation_living_room_1791898474079.jpg';
+import valuationLivingRoomImg from '../assets/images/valuation_living_room_1791898474079.webp';
 
 interface HomeValuationBannerProps {
   onOpenValuation: () => void;
@@ -46,10 +46,15 @@ export const HomeValuationBanner: React.FC<HomeValuationBannerProps> = ({
             src={valuationLivingRoomImg}
             alt="Bright, elegant luxury penthouse living room overlooking city skyline"
             referrerPolicy="no-referrer"
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover"
             onError={(e) => {
-              e.currentTarget.src =
-                'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1600&q=85';
+              const img = e.currentTarget;
+              if (img.dataset.fallbackApplied) return;
+              img.dataset.fallbackApplied = 'true';
+              img.src =
+                'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80';
             }}
           />
 

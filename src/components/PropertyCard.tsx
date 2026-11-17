@@ -61,13 +61,18 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           src={
             property.image && property.image !== 'data:,' && property.image.length > 20
               ? property.image
-              : 'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=1600&q=80'
+              : 'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=1200&q=80'
           }
           alt={`${property.address}, ${property.location}`}
           referrerPolicy="no-referrer"
+          loading="lazy"
+          decoding="async"
           onError={(e) => {
-            (e.target as HTMLImageElement).src =
-              'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=1600&q=80';
+            const img = e.currentTarget;
+            if (img.dataset.fallbackApplied) return;
+            img.dataset.fallbackApplied = 'true';
+            img.src =
+              'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=1200&q=80';
           }}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />

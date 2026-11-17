@@ -1,10 +1,10 @@
 import { Property } from '../types.ts';
-import beverlyHillsImg from '../assets/images/prop_beverly_hills_1791898471631.jpg';
-import austinSuburbanImg from '../assets/images/prop_austin_suburban_1791898472412.jpg';
-import miamiCondoImg from '../assets/images/prop_miami_condo_1791898473434.jpg';
-import sanDiegoCoastalImg from '../assets/images/prop_sandiego_coastal_1791898473901.jpg';
-import heroHomeImg from '../assets/images/hero_luxury_home_1791898470387.jpg';
-import valuationRoomImg from '../assets/images/valuation_living_room_1791898474079.jpg';
+import beverlyHillsImg from '../assets/images/prop_beverly_hills_1791898471631.webp';
+import austinSuburbanImg from '../assets/images/prop_austin_suburban_1791898472412.webp';
+import miamiCondoImg from '../assets/images/prop_miami_condo_1791898473434.webp';
+import sanDiegoCoastalImg from '../assets/images/prop_sandiego_coastal_1791898473901.webp';
+import heroHomeImg from '../assets/images/hero_luxury_home_1791898470387.webp';
+import valuationRoomImg from '../assets/images/valuation_living_room_1791898474079.webp';
 
 export const FEATURED_PROPERTIES: Property[] = [
   {

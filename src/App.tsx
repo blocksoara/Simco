@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, Suspense, lazy } from 'react';
 import { AnnouncementBar } from './components/AnnouncementBar.tsx';
 import { Navbar } from './components/Navbar.tsx';
 import { HeroSection } from './components/HeroSection.tsx';
@@ -14,13 +14,6 @@ import { HomeValuationBanner } from './components/HomeValuationBanner.tsx';
 import { WhyChooseUs } from './components/WhyChooseUs.tsx';
 import { Newsletter } from './components/Newsletter.tsx';
 import { Footer } from './components/Footer.tsx';
-import { PropertyDetailModal } from './components/PropertyDetailModal.tsx';
-import { ValuationModal } from './components/ValuationModal.tsx';
-import { ListPropertyModal } from './components/ListPropertyModal.tsx';
-import { HowItWorksModal } from './components/HowItWorksModal.tsx';
-import { AllPropertiesModal } from './components/AllPropertiesModal.tsx';
-import { AuthModal } from './components/AuthModal.tsx';
-import { HiddenAdminModal } from './components/HiddenAdminModal.tsx';
 import { FEATURED_PROPERTIES } from './data/properties.ts';
 import { Property, SearchFilters } from './types.ts';
 import { Language, translations } from './i18n/translations.ts';
@@ -28,6 +21,28 @@ import { CheckCircle2 } from 'lucide-react';
 import { useAuth } from './contexts/AuthContext.tsx';
 import { collection, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
 import { db } from './lib/firebase.ts';
+
+const PropertyDetailModal = lazy(() =>
+  import('./components/PropertyDetailModal.tsx').then((m) => ({ default: m.PropertyDetailModal }))
+);
+const ValuationModal = lazy(() =>
+  import('./components/ValuationModal.tsx').then((m) => ({ default: m.ValuationModal }))
+);
+const ListPropertyModal = lazy(() =>
+  import('./components/ListPropertyModal.tsx').then((m) => ({ default: m.ListPropertyModal }))
+);
+const HowItWorksModal = lazy(() =>
+  import('./components/HowItWorksModal.tsx').then((m) => ({ default: m.HowItWorksModal }))
+);
+const AllPropertiesModal = lazy(() =>
+  import('./components/AllPropertiesModal.tsx').then((m) => ({ default: m.AllPropertiesModal }))
+);
+const AuthModal = lazy(() =>
+  import('./components/AuthModal.tsx').then((m) => ({ default: m.AuthModal }))
+);
+const HiddenAdminModal = lazy(() =>
+  import('./components/HiddenAdminModal.tsx').then((m) => ({ default: m.HiddenAdminModal }))
+);
 
 export default function App() {
   // Persistent language state (defaulting to French 'fr', query param, or localStorage)
@@ -147,29 +162,29 @@ export default function App() {
 
               firestoreProps.push({
                 id: docSnap.id,
-                status: data.status,
-                price: data.price,
-                rawPrice: data.rawPrice,
+                status: data.status || 'FOR SALE',
+                price: String(data.price || ''),
+                rawPrice: typeof data.rawPrice === 'number' ? data.rawPrice : Number(data.rawPrice) || 0,
                 currency: data.currency,
                 currencySymbol: data.currencySymbol,
-                period: data.period,
-                address: data.address,
-                location: data.location,
-                city: data.city,
-                state: data.state || '',
-                zip: data.zip || '',
-                country: data.country,
-                beds: data.beds,
-                baths: data.baths,
-                sqFt: data.sqFt,
+                period: data.period || '',
+                address: String(data.address || ''),
+                location: String(data.location || ''),
+                city: String(data.city || ''),
+                state: String(data.state || ''),
+                zip: String(data.zip || ''),
+                country: String(data.country || ''),
+                beds: typeof data.beds === 'number' ? data.beds : Number(data.beds) || 0,
+                baths: typeof data.baths === 'number' ? data.baths : Number(data.baths) || 0,
+                sqFt: String(data.sqFt || ''),
                 image: safeImage,
                 images: cleanImages.length > 0 ? cleanImages : [safeImage],
                 video: data.video || undefined,
-                type: data.type,
-                description: data.description,
+                type: String(data.type || 'Single Family Home'),
+                description: String(data.description || ''),
                 yearBuilt: data.yearBuilt,
                 parking: data.parking,
-                features: data.features,
+                features: Array.isArray(data.features) ? data.features : [],
                 authorUid: data.authorUid,
                 createdAt: data.createdAt,
                 featured: data.featured,
@@ -289,19 +304,25 @@ export default function App() {
       }
 
       // Country filter
+      const propC = (prop.country || '').toLowerCase();
+      const propLoc = (prop.location || '').toLowerCase();
+      const propAddr = (prop.address || '').toLowerCase();
+      const propCity = (prop.city || '').toLowerCase();
+      const propZip = String(prop.zip || '');
+      const propTypeLower = (prop.type || '').toLowerCase();
+
       if (
         appliedFilters.country &&
         appliedFilters.country !== 'all'
       ) {
         const selC = appliedFilters.country.toLowerCase();
-        const propC = prop.country.toLowerCase();
         const matchesCountry =
           propC === selC ||
-          (selC === 'france' && (propC === 'france' || prop.location.toLowerCase().includes('france'))) ||
+          (selC === 'france' && (propC === 'france' || propLoc.includes('france'))) ||
           (selC === 'états-unis' && (propC === 'united states' || propC === 'états-unis')) ||
           (selC === 'united states' && (propC === 'united states' || propC === 'états-unis')) ||
           (selC === 'suisse' && (propC === 'switzerland' || propC === 'suisse')) ||
-          (selC === 'émirats arabes unis' && (propC === 'united arab emirates' || propC === 'émirats arabes unis' || prop.location.toLowerCase().includes('dubai')));
+          (selC === 'émirats arabes unis' && (propC === 'united arab emirates' || propC === 'émirats arabes unis' || propLoc.includes('dubai')));
         if (!matchesCountry) return false;
       }
 
@@ -309,11 +330,11 @@ export default function App() {
       if (appliedFilters.location.trim()) {
         const query = appliedFilters.location.toLowerCase();
         const matchesLoc =
-          prop.location.toLowerCase().includes(query) ||
-          prop.address.toLowerCase().includes(query) ||
-          prop.city.toLowerCase().includes(query) ||
-          prop.country.toLowerCase().includes(query) ||
-          prop.zip.includes(query);
+          propLoc.includes(query) ||
+          propAddr.includes(query) ||
+          propCity.includes(query) ||
+          propC.includes(query) ||
+          propZip.includes(query);
         if (!matchesLoc) return false;
       }
 
@@ -328,10 +349,10 @@ export default function App() {
           const isLand =
             prop.type === 'Land / Plot' ||
             prop.type === 'Terrain / Parcelle' ||
-            prop.type.toLowerCase().includes('terrain') ||
-            prop.type.toLowerCase().includes('parcelle') ||
-            prop.type.toLowerCase().includes('land') ||
-            prop.type.toLowerCase().includes('plot');
+            propTypeLower.includes('terrain') ||
+            propTypeLower.includes('parcelle') ||
+            propTypeLower.includes('land') ||
+            propTypeLower.includes('plot');
           if (!isLand) return false;
         } else if (prop.type !== appliedFilters.propertyType) {
           return false;
@@ -408,7 +429,7 @@ export default function App() {
       country: 'all',
       location: '',
       propertyType: 'Any Type',
-      priceRange: '$Min - $Max',
+      priceRange: 'all',
       beds: 'Any',
       baths: 'Any',
     };
@@ -559,82 +580,98 @@ export default function App() {
         onTriggerAdmin={() => setIsAdminModalOpen(true)}
       />
 
-      {/* Modals */}
-      <PropertyDetailModal
-        property={selectedProperty}
-        onClose={() => setSelectedProperty(null)}
-        isFavorite={selectedProperty ? activeFavorites.has(selectedProperty.id) : false}
-        onToggleFavorite={handleToggleFavorite}
-        t={t.modals.propertyDetail}
-        featuredT={t.featured}
-        currentUserId={user?.uid}
-        onDeleteProperty={handleDeleteProperty}
-        lang={lang}
-      />
+      {/* Lazy-loaded Modals (only downloaded and mounted when opened) */}
+      <Suspense fallback={null}>
+        {selectedProperty && (
+          <PropertyDetailModal
+            key={selectedProperty.id}
+            property={selectedProperty}
+            onClose={() => setSelectedProperty(null)}
+            isFavorite={activeFavorites.has(selectedProperty.id)}
+            onToggleFavorite={handleToggleFavorite}
+            t={t.modals.propertyDetail}
+            featuredT={t.featured}
+            currentUserId={user?.uid}
+            onDeleteProperty={handleDeleteProperty}
+            lang={lang}
+          />
+        )}
 
-      <ValuationModal
-        isOpen={isValuationOpen}
-        onClose={() => setIsValuationOpen(false)}
-        t={t.modals.valuation}
-        lang={lang}
-        defaultCountry={filters.country !== 'all' ? filters.country : undefined}
-      />
+        {isValuationOpen && (
+          <ValuationModal
+            isOpen={isValuationOpen}
+            onClose={() => setIsValuationOpen(false)}
+            t={t.modals.valuation}
+            lang={lang}
+            defaultCountry={filters.country !== 'all' ? filters.country : undefined}
+          />
+        )}
 
-      <ListPropertyModal
-        isOpen={isListPropertyOpen}
-        onClose={() => setIsListPropertyOpen(false)}
-        onAddProperty={handleAddProperty}
-        lang={lang}
-        t={t.modals.listProperty}
-      />
+        {isListPropertyOpen && (
+          <ListPropertyModal
+            isOpen={isListPropertyOpen}
+            onClose={() => setIsListPropertyOpen(false)}
+            onAddProperty={handleAddProperty}
+            lang={lang}
+            t={t.modals.listProperty}
+          />
+        )}
 
-      <HowItWorksModal
-        isOpen={isHowItWorksOpen}
-        onClose={() => setIsHowItWorksOpen(false)}
-        onExplore={handleExploreProperties}
-        t={t.modals.howItWorks}
-      />
+        {isHowItWorksOpen && (
+          <HowItWorksModal
+            isOpen={isHowItWorksOpen}
+            onClose={() => setIsHowItWorksOpen(false)}
+            onExplore={handleExploreProperties}
+            t={t.modals.howItWorks}
+          />
+        )}
 
-      <AllPropertiesModal
-        isOpen={isAllPropertiesOpen}
-        onClose={() => setIsAllPropertiesOpen(false)}
-        properties={propertiesList}
-        favorites={activeFavorites}
-        onToggleFavorite={handleToggleFavorite}
-        onSelectProperty={(prop) => {
-          setIsAllPropertiesOpen(false);
-          setSelectedProperty(prop);
-        }}
-        lang={lang}
-        t={t.modals.allProperties}
-        featuredT={t.featured}
-        searchT={t.search}
-        currentUserId={user?.uid}
-        currentUserEmail={user?.email || undefined}
-        onDeleteProperty={handleDeleteProperty}
-        initialFilter={allPropertiesInitialFilter}
-      />
+        {isAllPropertiesOpen && (
+          <AllPropertiesModal
+            isOpen={isAllPropertiesOpen}
+            onClose={() => setIsAllPropertiesOpen(false)}
+            properties={propertiesList}
+            favorites={activeFavorites}
+            onToggleFavorite={handleToggleFavorite}
+            onSelectProperty={(prop) => {
+              setIsAllPropertiesOpen(false);
+              setSelectedProperty(prop);
+            }}
+            lang={lang}
+            t={t.modals.allProperties}
+            featuredT={t.featured}
+            searchT={t.search}
+            currentUserId={user?.uid}
+            currentUserEmail={user?.email || undefined}
+            onDeleteProperty={handleDeleteProperty}
+            initialFilter={allPropertiesInitialFilter}
+          />
+        )}
 
-      <AuthModal
-        isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
-        lang={lang}
-      />
+        {isAuthOpen && (
+          <AuthModal
+            isOpen={isAuthOpen}
+            onClose={() => setIsAuthOpen(false)}
+            lang={lang}
+          />
+        )}
 
-      {/* Hidden Master Admin Modal for the Owner */}
-      <HiddenAdminModal
-        isOpen={isAdminModalOpen}
-        onClose={() => setIsAdminModalOpen(false)}
-        properties={propertiesList}
-        onAddProperty={handleAddProperty}
-        onDeleteProperty={handleDeleteProperty}
-        onSelectProperty={(prop) => {
-          setSelectedProperty(prop);
-        }}
-        isAdminAuthenticated={isAdminAuthenticated}
-        setIsAdminAuthenticated={setIsAdminAuthenticated}
-        lang={lang}
-      />
+        {isAdminModalOpen && (
+          <HiddenAdminModal
+            isOpen={isAdminModalOpen}
+            onClose={() => setIsAdminModalOpen(false)}
+            properties={propertiesList}
+            onAddProperty={handleAddProperty}
+            onDeleteProperty={handleDeleteProperty}
+            onSelectProperty={(prop) => {
+              setSelectedProperty(prop);
+            }}
+            isAdminAuthenticated={isAdminAuthenticated}
+            setIsAdminAuthenticated={setIsAdminAuthenticated}
+            lang={lang}
+          />
+        )}
+      </Suspense>
 
       {/* Discreet Floating Admin Indicator (Only visible if owner is authenticated) */}
       {isAdminAuthenticated && (

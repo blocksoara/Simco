@@ -30,10 +30,12 @@ export const PropertySearch: React.FC<PropertySearchProps> = ({
   }, [filters.country, filters.tab, lang]);
 
   const handleTabChange = (tab: 'Buy' | 'Rent' | 'Sell') => {
-    setFilters((prev) => ({ ...prev, tab, priceRange: 'all' }));
     if (tab === 'Sell') {
       onOpenValuation();
-    } else if (onTabChange) {
+      return;
+    }
+    setFilters((prev) => ({ ...prev, tab, priceRange: 'all' }));
+    if (onTabChange) {
       onTabChange(tab);
     }
   };

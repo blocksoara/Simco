@@ -61,8 +61,9 @@ export const Navbar: React.FC<NavbarProps> = ({
     } else if (tabKey === 'home') {
       onFilterStatus?.('all');
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else if (tabKey === 'aboutUs' || tabKey === 'contact') {
-      const el = document.getElementById(tabKey === 'aboutUs' ? 'why-choose-us' : 'footer-contact');
+    } else if (tabKey === 'aboutUs' || tabKey === 'contact' || tabKey === 'blog') {
+      const targetId = tabKey === 'contact' ? 'footer-contact' : 'why-choose-us';
+      const el = document.getElementById(targetId);
       el?.scrollIntoView({ behavior: 'smooth' });
     }
   };

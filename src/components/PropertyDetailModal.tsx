@@ -65,10 +65,17 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
   });
   const [tourType, setTourType] = useState('In-Person');
 
+  React.useEffect(() => {
+    setSelectedPhotoIndex(0);
+    setActiveMediaTab('photos');
+    setShowDeleteConfirm(false);
+    setTourBooked(false);
+  }, [property?.id]);
+
   if (!property) return null;
 
   const defaultFallback =
-    'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=1600&q=80';
+    'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=1200&q=80';
   const rawList =
     property.images && property.images.length > 0
       ? property.images
@@ -143,6 +150,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                 <iframe
                   src={parsedVideo.embedUrl}
                   title="Virtual Property Tour"
+                  loading="lazy"
                   className="w-full h-full border-0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
@@ -162,8 +170,12 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                 src={currentPhoto}
                 alt={property.address}
                 referrerPolicy="no-referrer"
+                decoding="async"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = defaultFallback;
+                  const img = e.currentTarget;
+                  if (img.dataset.fallbackApplied) return;
+                  img.dataset.fallbackApplied = 'true';
+                  img.src = defaultFallback;
                 }}
                 className="w-full h-full object-cover transition-all duration-300"
               />
